@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>גביע הרחוב - מנהל הקבוצה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pitch-dark:#134d2e;
+    --pitch:#1f7a4d;
+    --pitch-light:#2fa968;
+    --bg:#f2f7ef;
+    --ink:#12261a;
+    --card:#ffffff;
+    --line:#d8ead9;
+    --gold:#ffc93c;
+    --red:#e6484f;
+    --muted:#6b8072;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 20% -10%, #2fa96833, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Rubik', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:18px 12px 40px;
+  }
+  h1,h2,h3, .headline{
+    font-family:'Baloo 2', sans-serif;
+    margin:0;
+  }
+  .app{
+    width:100%;
+    max-width:460px;
+  }
+  .topbar{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .topbar .headline{
+    font-size:22px;
+    font-weight:800;
+    color:var(--pitch-dark);
+  }
+  .topbar .headline span{color:var(--gold); -webkit-text-stroke:0.6px var(--pitch-dark);}
+  .subtitle{font-size:13px; color:var(--muted);}
+
+  .rail{
+    display:flex;
+    gap:6px;
+    margin-bottom:18px;
+  }
+  .rail-step{
+    flex:1;
+    height:8px;
+    border-radius:6px;
+    background:var(--line);
+  }
+  .rail-step.done{background:var(--pitch-light);}
+  .rail-step.current{background:var(--gold);}
+
+  .card{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:20px;
+    padding:18px;
+    margin-bottom:14px;
+    box-shadow:0 6px 0 var(--line);
+  }
+  .hidden{display:none !important;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:12px;
+  }
+  .player{
+    border:2px solid var(--line);
+    border-radius:16px;
+    padding:10px;
+    text-align:center;
+    cursor:pointer;
+    background:#fbfdfa;
+    transition:transform .12s ease, border-color .12s ease, background .12s ease;
+    user-select:none;
+  }
+  .player:active{transform:scale(0.96);}
+  .player.selected{
+    border-color:var(--pitch);
+    background:#e9f7ee;
+  }
+  .player .emoji{font-size:30px;}
+  .player .name{font-family:'Baloo 2'; font-weight:700; font-size:15px; margin-top:4px;}
+  .player .pos{font-size:11px; color:var(--muted); margin-bottom:6px;}
+  .player .special{
+    font-size:10.5px;
+    color:#8a5a00;
+    background:#fff3d6;
+    border-radius:8px;
+    padding:2px 6px;
+    display:inline-block;
+    margin-bottom:6px;
+    font-weight:600;
+  }
+  .stat-row{display:flex; justify-content:center; gap:8px; font-size:11px;}
+  .stat{padding:2px 6px; border-radius:8px; font-weight:700;}
+  .stat.atk{background:#fde3d0; color:#b4460a;}
+  .stat.def{background:#dcebfa; color:#1b4d8c;}
+
+  .pick-count{
+    text-align:center;
+    font-size:13px;
+    color:var(--muted);
+    margin-top:10px;
+    font-weight:500;
+  }
+
+  button.primary{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:16px;
+    background:var(--pitch);
+    color:#fff;
+    font-family:'Baloo 2';
+    font-size:17px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 5px 0 var(--pitch-dark);
+    margin-top:8px;
+  }
+  button.primary:disabled{
+    background:#b7c9bd;
+    box-shadow:0 5px 0 #99a89e;
+    cursor:not-allowed;
+  }
+  button.primary:active:not(:disabled){transform:translateY(3px); box-shadow:0 2px 0 var(--pitch-dark);}
+
+  input#teamName{
+    width:100%;
+    padding:12px 14px;
+    border-radius:14px;
+    border:2px solid var(--line);
+    font-family:'Rubik';
+    font-size:16px;
+    text-align:center;
+    margin-top:6px;
+  }
+
+  .length-toggle{
+    display:flex; gap:8px; margin:12px 0 4px;
+  }
+  .length-btn{
+    flex:1;
+    padding:10px 6px;
+    border-radius:14px;
+    border:2px solid var(--line);
+    background:#fbfdfa;
+    font-family:'Baloo 2';
+    font-weight:700;
+    font-size:13px;
+    color:var(--muted);
+    text-align:center;
+    cursor:pointer;
+  }
+  .length-btn .sub{display:block; font-family:'Rubik'; font-weight:400; font-size:10px; margin-top:2px;}
+  .length-btn.active{
+    border-color:var(--pitch);
+    background:#e9f7ee;
+    color:var(--pitch-dark);
+  }
+
+  .bracket{display:flex; flex-direction:column; gap:10px;}
+  .bracket-item{
+    display:flex; align-items:center; gap:12px;
+    padding:10px 12px; border-radius:14px;
+    border:2px solid var(--line); background:#fbfdfa;
+  }
+  .bracket-item.won{border-color:var(--pitch-light); background:#e9f7ee;}
+  .bracket-item.now{border-color:var(--gold); background:#fff8e6;}
+  .bracket-item .num{
+    width:26px; height:26px; border-radius:50%;
+    background:var(--pitch-dark); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Baloo 2'; font-size:13px; flex-shrink:0;
+  }
+  .bracket-item.won .num{background:var(--pitch-light);}
+  .bracket-item .info{flex:1;}
+  .bracket-item .team{font-family:'Baloo 2'; font-weight:700; font-size:14px;}
+  .bracket-item .round-label{font-size:11px; color:var(--muted);}
+  .bracket-item .badge{font-size:20px;}
+
+  .versus{
+    display:flex; align-items:center; justify-content:space-between;
+    margin:6px 0 2px;
+  }
+  .side{text-align:center; flex:1;}
+  .side .crest{font-size:34px; display:block;}
+  .side .tname{font-family:'Baloo 2'; font-weight:700; font-size:13px; margin-top:2px;}
+  .score{
+    font-family:'Baloo 2'; font-size:28px; font-weight:800;
+    min-width:80px; text-align:center; color:var(--pitch-dark);
+    transition:transform .15s;
+  }
+  .score.pulse{animation:pulse .4s ease;}
+  @keyframes pulse{
+    0%{transform:scale(1);}
+    40%{transform:scale(1.3); color:var(--gold);}
+    100%{transform:scale(1);}
+  }
+  .clock{text-align:center; font-size:12px; color:var(--muted); margin-bottom:2px;}
+  #timerLabel{font-family:'Baloo 2'; font-size:15px; font-weight:700; color:var(--pitch-dark);}
+
+  .match-status{
+    text-align:center; min-height:20px;
+    font-family:'Baloo 2'; font-weight:700; font-size:14px;
+    color:var(--pitch-dark); margin:4px 0 8px;
+  }
+
+  .game-wrap{
+    position:relative;
+    width:100%;
+    aspect-ratio:400/272;
+    border-radius:14px;
+    overflow:hidden;
+    border:3px solid #fff;
+    box-shadow:0 4px 10px rgba(0,0,0,.15);
+    touch-action:none;
+    background:#0d2818;
+  }
+  #pitchCanvas{width:100%; height:100%; display:block;}
+
+  .controls-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:10px;
+    padding:0 4px;
+    direction:ltr;
+  }
+  .joy-base{
+    position:relative;
+    width:70px; height:70px; border-radius:50%;
+    background:rgba(31,122,77,.12);
+    border:2px solid var(--line);
+    touch-action:none;
+    flex-shrink:0;
+  }
+  .joy-knob{
+    position:absolute; left:50%; top:50%;
+    width:32px; height:32px; margin-left:-16px; margin-top:-16px;
+    border-radius:50%; background:var(--pitch);
+    box-shadow:0 2px 5px rgba(0,0,0,.25);
+  }
+  .shoot-btn{
+    position:relative;
+    width:56px; height:56px; border-radius:50%;
+    border:none; background:var(--gold); font-size:22px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 0 #cf9e1c;
+    touch-action:none;
+    flex-shrink:0;
+  }
+  .shoot-btn .ring{
+    position:absolute; inset:-6px; border-radius:50%;
+    border:3px solid var(--pitch); opacity:0; transform:scale(.6);
+  }
+  .shoot-btn.charging .ring{
+    opacity:1; animation:chargeGrow .8s linear forwards;
+  }
+  @keyframes chargeGrow{ from{transform:scale(.6);} to{transform:scale(1.3);} }
+
+  .hint{text-align:center; font-size:11px; color:var(--muted); margin-top:8px;}
+
+  .result-banner{
+    text-align:center; padding:14px; border-radius:16px;
+    margin-top:10px; font-family:'Baloo 2'; font-size:18px; font-weight:800;
+  }
+  .result-banner.win{background:#e9f7ee; color:var(--pitch-dark);}
+  .result-banner.lose{background:#fdeaea; color:var(--red);}
+
+  .trophy-screen{text-align:center;}
+  .trophy-screen .big{font-size:70px;}
+  .confetti{position:fixed; top:-20px; font-size:20px; animation:fall linear forwards;}
+  @keyframes fall{ to{ transform:translateY(110vh) rotate(360deg); opacity:0.9;} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="headline">גביע ה<span>רחוב</span> ⚽</div>
+  </div>
+  <div class="subtitle" style="margin-bottom:10px;">בנה קבוצה, שחק בעצמך, נצח ארבעה יריבים והרם את הגביע</div>
+
+  <div class="rail" id="rail">
+    <div class="rail-step" data-i="0"></div>
+    <div class="rail-step" data-i="1"></div>
+    <div class="rail-step" data-i="2"></div>
+    <div class="rail-step" data-i="3"></div>
+  </div>
+
+  <!-- SCREEN 1: team name -->
+  <div class="card" id="screen-name">
+    <h2>איך קוראים לקבוצה שלך?</h2>
+    <input id="teamName" placeholder="לדוגמה: הברקים" maxlength="18">
+    <button class="primary" id="btnNameNext">המשך לבחירת שחקנים</button>
+  </div>
+
+  <!-- SCREEN 2: draft -->
+  <div class="card hidden" id="screen-draft">
+    <h2>בחר שחקנים לקבוצה</h2>
+    <div class="subtitle">שחקן עם התקפה גבוהה יבעט חזק ומהיר, שחקן עם הגנה גבוהה יעזור לך לגנוב כדורים</div>
+    <div class="length-toggle" id="squadToggle">
+      <div class="length-btn active" data-size="5">5 נגד 5<span class="sub">משחק מהיר וזריז</span></div>
+      <div class="length-btn" data-size="11">11 נגד 11<span class="sub">משחק מלא</span></div>
+    </div>
+    <div class="grid" id="playerGrid"></div>
+    <div class="pick-count" id="pickCount">נבחרו 0 מתוך 5</div>
+    <button class="primary" id="btnDraftNext" disabled>המשך לגביע</button>
+  </div>
+
+  <!-- SCREEN 3: bracket -->
+  <div class="card hidden" id="screen-bracket">
+    <h2 id="bracketTeamName">המסלול לגביע</h2>
+    <div class="bracket" id="bracketList"></div>
+    <div class="length-toggle" id="lengthToggle">
+      <div class="length-btn active" data-len="short">משחק מהיר<span class="sub">45 שניות</span></div>
+      <div class="length-btn" data-len="long">משחק ארוך<span class="sub">5 דקות</span></div>
+    </div>
+    <div class="length-toggle" id="funToggle">
+      <div class="length-btn active" data-mode="normal">רגיל<span class="sub">משחק סטנדרטי</span></div>
+      <div class="length-btn" data-mode="bounce">קפיצות ענק<span class="sub">ריצה מוגזמת</span></div>
+      <div class="length-btn" data-mode="glitch">גליץ׳<span class="sub">מסך משתולל</span></div>
+    </div>
+    <button class="primary" id="btnPlayMatch">שרוק להתחלת המשחק</button>
+  </div>
+
+  <!-- SCREEN 4: match (live controllable) -->
+  <div class="card hidden" id="screen-match">
+    <div class="clock" id="roundLabel"></div>
+    <div class="versus">
+      <div class="side">
+        <span class="crest" id="homeCrest">⚽</span>
+        <div class="tname" id="homeName"></div>
+      </div>
+      <div class="score" id="scoreLine">0 - 0</div>
+      <div class="side">
+        <span class="crest" id="awayCrest">🛡️</span>
+        <div class="tname" id="awayName"></div>
+      </div>
+    </div>
+    <div class="clock">⏱️ <span id="timerLabel">45</span></div>
+    <div class="match-status" id="matchStatus"></div>
+
+    <div class="game-wrap" id="gameWrap">
+      <canvas id="pitchCanvas"></canvas>
+    </div>
+    <div class="controls-bar">
+      <div class="joy-base" id="joyBase"><div class="joy-knob" id="joyKnob"></div></div>
+      <button class="shoot-btn" id="shootBtn"><span class="ring"></span>⚽</button>
+    </div>
+    <div class="hint">🕹️ ג'ויסטיק שמאלי לניוד • החזק את כפתור הכדור כדי לבעוט חזק</div>
+
+    <div id="resultArea"></div>
+    <button class="primary" id="btnContinue" style="display:none;">המשך</button>
+  </div>
+
+  <!-- SCREEN 5: trophy -->
+  <div class="card hidden trophy-screen" id="screen-trophy">
+    <div class="big">🏆</div>
+    <h2 id="trophyTitle">אלופת גביע הרחוב!</h2>
+    <p id="trophyText" class="subtitle"></p>
+    <button class="primary" id="btnRestartWin">התחל טורניר חדש</button>
+  </div>
+
+</div>
+
+<script>
+/* ================= data ================= */
+const PLAYERS = [
+  {name:"עידו כהן", pos:"חלוץ", emoji:"⚡", atk:5, def:1, special:"מהירות ברק"},
+  {name:"רועי לוי", pos:"מגן", emoji:"🛡️", atk:1, def:5, special:"קיר בלתי עביר"},
+  {name:"תומר אזולאי", pos:"קישור", emoji:"🧠", atk:3, def:3, special:"חזון משחק"},
+  {name:"דניאל פרץ", pos:"חלוץ", emoji:"💥", atk:4, def:2, special:"בעיטה משוריינת"},
+  {name:"יונתן מזרחי", pos:"מגן", emoji:"👁️", atk:2, def:4, special:"קריאת משחק"},
+  {name:"אורי גבאי", pos:"קישור", emoji:"🔋", atk:4, def:3, special:"אנרגיה אינסופית"},
+  {name:"נדב שלום", pos:"חלוץ", emoji:"🚀", atk:5, def:2, special:"פיצוץ מהירות"},
+  {name:"איתי בן דוד", pos:"מגן", emoji:"🔩", atk:1, def:5, special:"מגן ברזל"},
+  {name:"גיא אברהם", pos:"קישור", emoji:"🎯", atk:3, def:4, special:"טאקל נקי"},
+  {name:"עומר וקנין", pos:"חלוץ", emoji:"❄️", atk:4, def:1, special:"גמר קר רוח"},
+  {name:"ליאור דהן", pos:"קישור", emoji:"🔥", atk:2, def:2, special:"עקשנות"},
+  {name:"שקד נחום", pos:"קישור", emoji:"🏹", atk:4, def:2, special:"דיוק בבעיטה"},
+  {name:"אלון ששון", pos:"מגן", emoji:"🗿", atk:2, def:5, special:"ענק המגרש"},
+  {name:"מתן אוחיון", pos:"חלוץ", emoji:"🌪️", atk:4, def:2, special:"פריצה מהירה"},
+  {name:"יובל כרמי", pos:"קישור", emoji:"🤝", atk:3, def:3, special:"משחק קבוצתי"},
+  {name:"איתמר ברוך", pos:"קישור", emoji:"🎯", atk:4, def:2, special:"דיוק חד"},
+  {name:"רן חדד", pos:"מגן", emoji:"🧱", atk:2, def:5, special:"ריכוז מוחלט"},
+  {name:"עידן טל", pos:"חלוץ", emoji:"💨", atk:4, def:2, special:"ריצה פרועה"},
+  {name:"בר עמרם", pos:"קישור", emoji:"🧭", atk:3, def:3, special:"קריאה טקטית"},
+  {name:"נועם אלבז", pos:"מגן", emoji:"⛰️", atk:1, def:5, special:"הגנה בלתי מעורערת"},
+];
+
+const OPPONENTS = [
+  {name:"נמרי הצפון", emoji:"🐯", atk:2.2, def:2.0, roundLabel:"סיבוב 1"},
+  {name:"ברקים כחולים", emoji:"🌩️", atk:2.7, def:2.5, roundLabel:"סיבוב 2"},
+  {name:"האריות האדומים", emoji:"🦁", atk:3.1, def:2.9, roundLabel:"חצי גמר"},
+  {name:"כוכבי הזהב", emoji:"🌟", atk:3.6, def:3.3, roundLabel:"הגמר הגדול"},
+];
+
+/* ================= app state ================= */
+let state = { teamName:"", selected:[], round:0, matchLength:'short', squadSize:5, funMode:'normal' };
+
+function $(id){return document.getElementById(id);}
+function show(id){$(id).classList.remove('hidden');}
+function hide(id){$(id).classList.add('hidden');}
+function setRail(step){
+  document.querySelectorAll('.rail-step').forEach((el,i)=>{
+    el.classList.remove('done','current');
+    if(i<step) el.classList.add('done');
+    else if(i===step) el.classList.add('current');
+  });
+}
+
+/* ================= screen 1: name ================= */
+$('btnNameNext').addEventListener('click', ()=>{
+  const val = $('teamName').value.trim();
+  state.teamName = val || "הקבוצה שלי";
+  hide('screen-name');
+  renderDraft();
+  show('screen-draft');
+  setRail(1);
+});
+
+/* ================= screen 2: draft ================= */
+function renderDraft(){
+  const grid = $('playerGrid');
+  grid.innerHTML = "";
+  const poolSize = state.squadSize === 11 ? 20 : 15;
+  PLAYERS.slice(0, poolSize).forEach((p, idx)=>{
+    const div = document.createElement('div');
+    div.className = "player";
+    div.dataset.idx = idx;
+    div.innerHTML = `
+      <span class="emoji">${p.emoji}</span>
+      <div class="name">${p.name}</div>
+      <div class="pos">${p.pos}</div>
+      <div class="special">✨ ${p.special}</div>
+      <div class="stat-row">
+        <span class="stat atk">התקפה ${p.atk}</span>
+        <span class="stat def">הגנה ${p.def}</span>
+      </div>`;
+    div.addEventListener('click', ()=>togglePlayer(idx, div));
+    grid.appendChild(div);
+  });
+  updatePickCount();
+}
+
+function togglePlayer(idx, el){
+  const pos = state.selected.indexOf(idx);
+  if(pos >= 0){
+    state.selected.splice(pos,1);
+    el.classList.remove('selected');
+  } else {
+    if(state.selected.length >= state.squadSize) return;
+    state.selected.push(idx);
+    el.classList.add('selected');
+  }
+  updatePickCount();
+}
+
+function updatePickCount(){
+  $('pickCount').textContent = `נבחרו ${state.selected.length} מתוך ${state.squadSize}`;
+  $('btnDraftNext').disabled = state.selected.length !== state.squadSize;
+}
+
+document.querySelectorAll('#squadToggle .length-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#squadToggle .length-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.squadSize = parseInt(btn.dataset.size, 10);
+    state.selected = [];
+    renderDraft();
+  });
+});
+
+$('btnDraftNext').addEventListener('click', ()=>{
+  hide('screen-draft');
+  state.round = 0;
+  renderBracket();
+  show('screen-bracket');
+  setRail(2);
+});
+
+function myPower(){
+  const chosen = state.selected.map(i=>PLAYERS[i]);
+  const atk = chosen.reduce((s,p)=>s+p.atk,0)/chosen.length;
+  const def = chosen.reduce((s,p)=>s+p.def,0)/chosen.length;
+  return {atk, def};
+}
+
+/* ================= screen 3: bracket ================= */
+function renderBracket(){
+  $('bracketTeamName').textContent = `המסלול של ${state.teamName}`;
+  const list = $('bracketList');
+  list.innerHTML = "";
+  OPPONENTS.forEach((o, i)=>{
+    const div = document.createElement('div');
+    let cls = "bracket-item";
+    let badge = "";
+    if(i < state.round){ cls += " won"; badge = "✅"; }
+    else if(i === state.round){ cls += " now"; badge = "▶️"; }
+    else { badge = o.emoji; }
+    div.className = cls;
+    div.innerHTML = `
+      <div class="num">${i+1}</div>
+      <div class="info">
+        <div class="team">${o.name} ${o.emoji}</div>
+        <div class="round-label">${o.roundLabel}</div>
+      </div>
+      <div class="badge">${badge}</div>`;
+    list.appendChild(div);
+  });
+  $('btnPlayMatch').textContent = state.round===0 ? "שרוק להתחלת המשחק" : "המשך למשחק הבא";
+}
+
+document.querySelectorAll('.length-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.length-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.matchLength = btn.dataset.len;
+  });
+});
+
+$('btnPlayMatch').addEventListener('click', ()=>{
+  hide('screen-bracket');
+  show('screen-match');
+  setRail(2);
+  startMatch();
+});
+
+/* ================= screen 4: LIVE MATCH ENGINE ================= */
+const PW = 400, PH = 232;
+const STAND_H = 22;
+const CANVAS_H = PH + STAND_H*2;
+const GOAL_HALF = 34;
+const goalTop = PH/2 - GOAL_HALF, goalBottom = PH/2 + GOAL_HALF;
+const CAPTURE_R = 15;
+const DRIBBLE_OFFSET = 13;
+const FRICTION = 0.985;
+const AI_SHOOT_RANGE = 95;
+const MAX_CHARGE_MS = 700;
+const FOUL_CHANCE = 0.08;
+const ZOOM = 2.3;              // how close the camera sits — higher = players look bigger
+const OBLIQUE_SQUISH = 0.78;   // vertical compression, gives the low angled "coach" look instead of a flat drone view
+
+let camera = {x: PW/2, y: PH/2};
+
+function worldToScreen(x, y){
+  const dx = x - camera.x;
+  const dy = (y - camera.y) * OBLIQUE_SQUISH;
+  return { sx: PW/2 + dx*ZOOM, sy: PH/2 + dy*ZOOM };
+}
+
+function updateCamera(){
+  const halfW = Math.min(PW/2, (PW/2)/ZOOM);
+  const halfH = Math.min(PH/2, (PH/2)/(ZOOM*OBLIQUE_SQUISH));
+  camera.x += (ball.x - camera.x) * 0.10;
+  camera.y += (ball.y - camera.y) * 0.10;
+  camera.x = Math.max(halfW, Math.min(PW-halfW, camera.x));
+  camera.y = Math.max(halfH, Math.min(PH-halfH, camera.y));
+}
+
+let canvas, ctx;
+let myTeam = [], oppTeam = [], controlled, ball;
+let carrier = null;
+let lastTouchTeam = null;
+let foulLockFrames = 0;
+let glitchBurstFrames = 0, glitchNextIn = 90;
+let joystickVec = {x:0, y:0};
+let joyActive = false, joyPointerId = null;
+let chargeStart = null, charging = false;
+let running = false;
+let timerInterval = null;
+let timeLeft = 45;
+let mode = 'regular'; // 'regular' | 'overtime'
+let homeScore = 0, awayScore = 0;
+let speedPlayer, speedAI, maxPower, minPower, captureBonusMine, oppShootChance;
+let engineInit = false;
+
+function clampEntity(e){
+  e.x = Math.max(12, Math.min(PW-12, e.x));
+  e.y = Math.max(12, Math.min(PH-12, e.y));
+}
+
+function initEngineOnce(){
+  if(engineInit) return;
+  engineInit = true;
+  canvas = $('pitchCanvas');
+  ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = PW*dpr; canvas.height = CANVAS_H*dpr;
+  ctx.scale(dpr,dpr);
+
+  // joystick
+  const joyBase = $('joyBase'), joyKnob = $('joyKnob');
+  const JOY_R = 32;
+  joyBase.addEventListener('pointerdown', (e)=>{
+    joyActive = true; joyPointerId = e.pointerId;
+    joyBase.setPointerCapture(e.pointerId);
+    updateJoy(e);
+  });
+  joyBase.addEventListener('pointermove', (e)=>{
+    if(joyActive && e.pointerId === joyPointerId) updateJoy(e);
+  });
+  function endJoy(e){
+    if(e.pointerId !== joyPointerId) return;
+    joyActive = false; joyPointerId = null;
+    joystickVec = {x:0,y:0};
+    joyKnob.style.transform = `translate(0px,0px)`;
+  }
+  joyBase.addEventListener('pointerup', endJoy);
+  joyBase.addEventListener('pointercancel', endJoy);
+  function updateJoy(e){
+    const rect = joyBase.getBoundingClientRect();
+    const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+    let dx = e.clientX - cx, dy = e.clientY - cy;
+    const dist = Math.hypot(dx,dy);
+    const clamped = Math.min(dist, JOY_R);
+    const ang = Math.atan2(dy,dx);
+    const kx = Math.cos(ang)*clamped, ky = Math.sin(ang)*clamped;
+    joyKnob.style.transform = `translate(${kx}px,${ky}px)`;
+    joystickVec = {x: kx/JOY_R, y: ky/JOY_R};
+  }
+
+  // shoot button
+  const shootBtn = $('shootBtn');
+  shootBtn.addEventListener('pointerdown', (e)=>{
+    if(!running) return;
+    if(carrier !== controlled) return;
+    charging = true;
+    chargeStart = performance.now();
+    shootBtn.classList.add('charging');
+  });
+  function releaseShot(){
+    if(!charging) return;
+    charging = false;
+    shootBtn.classList.remove('charging');
+    if(carrier !== controlled){ return; }
+    const held = Math.min(performance.now() - chargeStart, MAX_CHARGE_MS);
+    const power = minPower + (held/MAX_CHARGE_MS)*(maxPower-minPower);
+    const f = controlled.facing || {x:1,y:0};
+    doShoot(controlled, f, power);
+  }
+  shootBtn.addEventListener('pointerup', releaseShot);
+  shootBtn.addEventListener('pointerleave', ()=>{ if(charging) releaseShot(); });
+}
+
+function generateFormation(count, side){
+  const defCount = Math.max(1, Math.round(count*0.3));
+  const midCount = Math.max(1, Math.round(count*0.4));
+  const atkCount = Math.max(1, count - defCount - midCount);
+  const lines = [
+    {n: defCount, xFrac: side==='mine' ? 0.14 : 0.86},
+    {n: midCount, xFrac: side==='mine' ? 0.33 : 0.67},
+    {n: atkCount, xFrac: side==='mine' ? 0.47 : 0.53},
+  ];
+  const slots = [];
+  lines.forEach(line=>{
+    for(let i=0;i<line.n;i++){
+      const yFrac = (i+1)/(line.n+1);
+      slots.push({x: PW*line.xFrac, y: PH*yFrac});
+    }
+  });
+  return slots.slice(0, count);
+}
+
+function buildTeam(count, team){
+  const slots = generateFormation(count, team);
+  return slots.map(slot=>({
+    team,
+    x: slot.x, y: slot.y,
+    homeX: slot.x, homeY: slot.y,
+    vx:0, vy:0,
+    facing:{x: team==='mine'?1:-1, y:0},
+    anchorY: slot.y,
+    chaseOffY: (slot.y - PH/2) * 0.15,
+    animPhase: Math.random()*10,
+  }));
+}
+
+function makeEntities(){
+  myTeam = buildTeam(state.squadSize, 'mine');
+  oppTeam = buildTeam(state.squadSize, 'opp');
+  myTeam.forEach((e,i)=>{ e.emoji = PLAYERS[state.selected[i]]?.emoji || '👤'; });
+  oppTeam.forEach(e=>{ e.emoji = '🛡️'; });
+  ball = {x:PW/2, y:PH/2, vx:0, vy:0};
+  carrier = null;
+  lastTouchTeam = null;
+  foulLockFrames = 0;
+  controlled = myTeam.reduce((closest,e)=> (
+    Math.hypot(e.x-ball.x,e.y-ball.y) < Math.hypot(closest.x-ball.x,closest.y-ball.y) ? e : closest
+  ), myTeam[0]);
+}
+
+function resetPositions(){
+  myTeam.forEach(e=>{ e.x=e.homeX; e.y=e.homeY; e.vx=0; e.vy=0; });
+  oppTeam.forEach(e=>{ e.x=e.homeX; e.y=e.homeY; e.vx=0; e.vy=0; });
+  ball.x=PW/2; ball.y=PH/2; ball.vx=0; ball.vy=0;
+  carrier = null;
+  lastTouchTeam = null;
+  foulLockFrames = 0;
+  controlled = myTeam.reduce((closest,e)=> (
+    Math.hypot(e.x-ball.x,e.y-ball.y) < Math.hypot(closest.x-ball.x,closest.y-ball.y) ? e : closest
+  ), myTeam[0]);
+}
+
+function updateControlledSwitch(){
+  let best = controlled, bestDist = Math.hypot(controlled.x-ball.x, controlled.y-ball.y);
+  myTeam.forEach(e=>{
+    if(e === controlled) return;
+    const d = Math.hypot(e.x-ball.x, e.y-ball.y);
+    if(d < bestDist - 10){ best = e; bestDist = d; }
+  });
+  controlled = best;
+}
+
+function showStatus(text){
+  $('matchStatus').textContent = text;
+}
+
+function updateScoreDisplay(pulse){
+  $('scoreLine').textContent = `${homeScore} - ${awayScore}`;
+  if(pulse){
+    const el = $('scoreLine');
+    el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
+  }
+}
+
+function updateTimerDisplay(){
+  const m = Math.floor(timeLeft/60);
+  const s = timeLeft%60;
+  $('timerLabel').textContent = m>0 ? `${m}:${s.toString().padStart(2,'0')}` : `${s}`;
+}
+
+function startMatch(){
+  initEngineOnce();
+  clearInterval(timerInterval);
+  const opp = OPPONENTS[state.round];
+  const my = myPower();
+
+  speedPlayer = 2.25 + (my.atk-3)*0.15;
+  speedAI = 2.0;
+  minPower = 4.5;
+  maxPower = 7 + (my.atk-3)*0.6;
+  captureBonusMine = (my.def-3)*1.4;
+  oppShootChance = Math.max(0.02, 0.055 - (my.def-3)*0.006);
+
+  $('roundLabel').textContent = opp.roundLabel;
+  $('homeCrest').textContent = "⚽";
+  $('homeName').textContent = state.teamName;
+  $('awayCrest').textContent = opp.emoji;
+  $('awayName').textContent = opp.name;
+  homeScore = 0; awayScore = 0;
+  updateScoreDisplay(false);
+  showStatus("🔔 השופט שורק! המשחק מתחיל");
+  $('resultArea').innerHTML = "";
+  $('btnContinue').style.display = "none";
+
+  makeEntities();
+  mode = 'regular';
+  timeLeft = state.matchLength === 'long' ? 300 : 45;
+  updateTimerDisplay();
+
+  running = true;
+  requestAnimationFrame(tick);
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    timeLeft--;
+    updateTimerDisplay();
+    if(timeLeft <= 0){
+      clearInterval(timerInterval);
+      onTimerZero();
+    }
+  }, 1000);
+}
+
+function onTimerZero(){
+  const opp = OPPONENTS[state.round];
+  running = false;
+  if(mode === 'regular'){
+    if(homeScore === awayScore){
+      mode = 'overtime';
+      timeLeft = 20;
+      updateTimerDisplay();
+      showStatus("⏱️ תיקו! הארכה - הגול הבא מכריע");
+      resetPositions();
+      running = true;
+      requestAnimationFrame(tick);
+      startTimer();
+    } else {
+      endMatch();
+    }
+  } else {
+    showStatus("🥅 עדיין תיקו! פנדלים...");
+    setTimeout(penaltyShootoutWrapper, 900);
+  }
+}
+
+function endMatch(){
+  const opp = OPPONENTS[state.round];
+  if(homeScore === awayScore){ penaltyShootoutWrapper(); return; }
+  showResult(homeScore > awayScore, opp);
+}
+
+function penaltyShootoutWrapper(){
+  const opp = OPPONENTS[state.round];
+  showStatus("🥅 סדרת פנדלים...");
+  setTimeout(()=>{
+    let mine=0, theirs=0;
+    for(let i=0;i<3;i++){
+      if(Math.random()<0.65) mine++;
+      if(Math.random()<0.65) theirs++;
+    }
+    while(mine === theirs){
+      if(Math.random()<0.5) mine++; else theirs++;
+    }
+    showStatus(`🥅 תוצאת פנדלים: ${mine} - ${theirs}`);
+    setTimeout(()=>showResult(mine>theirs, opp), 800);
+  }, 900);
+}
+
+function showResult(won, opp){
+  running = false;
+  clearInterval(timerInterval);
+  const area = $('resultArea');
+  if(won){
+    area.innerHTML = `<div class="result-banner win">🎉 ${state.teamName} מנצחים את ${opp.name}!</div>`;
+  } else {
+    area.innerHTML = `<div class="result-banner lose">😔 ${opp.name} ניצחו הפעם</div>`;
+  }
+  const btn = $('btnContinue');
+  btn.style.display = "block";
+  btn.textContent = won ? "המשך בטורניר" : "נסה שוב מההתחלה";
+  btn.onclick = ()=>{
+    if(won){
+      state.round++;
+      hide('screen-match');
+      if(state.round >= OPPONENTS.length){
+        showTrophy();
+      } else {
+        renderBracket();
+        show('screen-bracket');
+      }
+    } else {
+      resetGame();
+    }
+  };
+}
+
+/* ---- shooting ---- */
+function doShoot(entity, dir, power){
+  const mag = Math.hypot(dir.x, dir.y) || 1;
+  const nx = dir.x/mag, ny = dir.y/mag;
+  ball.vx = nx*power;
+  ball.vy = ny*power;
+  ball.x += nx*(CAPTURE_R+5);
+  ball.y += ny*(CAPTURE_R+5);
+  carrier = null;
+}
+
+/* ---- AI steering ---- */
+function steerTowards(entity, target, speed){
+  const dx = target.x - entity.x, dy = target.y - entity.y;
+  const dist = Math.hypot(dx,dy);
+  if(dist > 1.5){
+    entity.vx = dx/dist*speed;
+    entity.vy = dy/dist*speed;
+    entity.facing = {x:dx/dist, y:dy/dist};
+  } else {
+    entity.vx = 0; entity.vy = 0;
+  }
+  entity.x += entity.vx;
+  entity.y += entity.vy;
+  clampEntity(entity);
+}
+
+function markChasers(team){
+  const K = Math.max(2, Math.round(team.length*0.32));
+  const arr = team.map(e=>({e, d: Math.hypot(e.x-ball.x, e.y-ball.y)}));
+  arr.sort((a,b)=>a.d-b.d);
+  team.forEach(e=>e.isChaser=false);
+  arr.slice(0,K).forEach(o=>{ o.e.isChaser = true; });
+}
+
+function updateAI(entity){
+  const myTeamHasBall = carrier && carrier.team === entity.team;
+  let target;
+  if(carrier === entity){
+    target = {x: entity.team==='mine' ? PW-16 : 16, y: PH/2};
+  } else if(myTeamHasBall){
+    const dir = entity.team==='mine' ? 1 : -1;
+    target = {x: carrier.x + dir*65, y: entity.anchorY};
+  } else if(entity.isChaser){
+    target = {x: ball.x, y: ball.y + entity.chaseOffY};
+  } else {
+    target = {
+      x: entity.homeX + (ball.x - PW/2) * 0.18,
+      y: entity.homeY + (ball.y - PH/2) * 0.12
+    };
+  }
+  steerTowards(entity, target, speedAI);
+}
+
+function movePlayerFromJoystick(){
+  const {x:jx, y:jy} = joystickVec;
+  const mag = Math.hypot(jx,jy);
+  if(mag > 0.12){
+    const clampedMag = Math.min(mag,1);
+    const nx = jx/mag, ny = jy/mag;
+    controlled.vx = nx*speedPlayer*clampedMag;
+    controlled.vy = ny*speedPlayer*clampedMag;
+    controlled.facing = {x:nx, y:ny};
+  } else {
+    controlled.vx = 0; controlled.vy = 0;
+  }
+  controlled.x += controlled.vx;
+  controlled.y += controlled.vy;
+  clampEntity(controlled);
+}
+
+function onGoal(scoringTeam){
+  running = false;
+  if(scoringTeam==='mine') homeScore++; else awayScore++;
+  updateScoreDisplay(true);
+  const opp = OPPONENTS[state.round];
+  showStatus(scoringTeam==='mine' ? `⚽ גול לכם! ${homeScore}-${awayScore}` : `⚽ גול ל${opp.name}! ${homeScore}-${awayScore}`);
+  if(mode === 'overtime'){
+    setTimeout(()=>{ clearInterval(timerInterval); endMatch(); }, 1300);
+  } else {
+    setTimeout(()=>{
+      resetPositions();
+      running = true;
+      requestAnimationFrame(tick);
+    }, 1300);
+  }
+}
+
+function tick(){
+  if(!running) return;
+
+  updateControlledSwitch();
+  movePlayerFromJoystick();
+  markChasers(myTeam);
+  markChasers(oppTeam);
+  myTeam.forEach(e=>{ if(e !== controlled) updateAI(e); });
+  oppTeam.forEach(e=>updateAI(e));
+
+  let best=null, bestDist=Infinity;
+  myTeam.concat(oppTeam).forEach(e=>{
+    const bonus = e.team==='mine' ? captureBonusMine : 0;
+    const threshold = CAPTURE_R + bonus;
+    const d = Math.hypot(e.x-ball.x, e.y-ball.y);
+    if(d < threshold && d < bestDist){ bestDist = d; best = e; }
+  });
+
+  if(foulLockFrames > 0){
+    foulLockFrames--;
+  } else if(best && carrier && best.team !== carrier.team && best !== carrier && Math.random() < FOUL_CHANCE){
+    const team = carrier.team==='mine' ? state.teamName : OPPONENTS[state.round].name;
+    showStatus(`🚫 פאול! ${team} שומרים על הכדור`);
+    foulLockFrames = 25;
+  } else {
+    carrier = best;
+  }
+  if(carrier) lastTouchTeam = carrier.team;
+
+  if(carrier){
+    const f = carrier.facing || {x:1,y:0};
+    ball.x = carrier.x + f.x*DRIBBLE_OFFSET;
+    ball.y = carrier.y + f.y*DRIBBLE_OFFSET;
+    ball.vx = 0; ball.vy = 0;
+
+    if(carrier !== controlled){
+      const distGoal = carrier.team==='mine' ? (PW-carrier.x) : carrier.x;
+      const shootChance = carrier.team==='mine' ? 0.05 : oppShootChance;
+      if(distGoal < AI_SHOOT_RANGE && Math.random() < shootChance){
+        const dirX = carrier.team==='mine' ? 1 : -1;
+        doShoot(carrier, {x: dirX, y: (PH/2 + (Math.random()*30-15)) - carrier.y}, 5.5+Math.random()*2.5);
+      }
+    }
+  } else {
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+    ball.vx *= FRICTION;
+    ball.vy *= FRICTION;
+    if(ball.y < 8){ ball.y = 8; ball.vy *= -0.7; }
+    if(ball.y > PH-8){ ball.y = PH-8; ball.vy *= -0.7; }
+
+    if(ball.x < 4){
+      if(ball.y > goalTop && ball.y < goalBottom){ onGoal('opp'); return; }
+      if(lastTouchTeam === 'mine'){ awardCorner('opp','left'); } else { awardGoalKick('mine','left'); }
+      return;
+    }
+    if(ball.x > PW-4){
+      if(ball.y > goalTop && ball.y < goalBottom){ onGoal('mine'); return; }
+      if(lastTouchTeam === 'opp'){ awardCorner('mine','right'); } else { awardGoalKick('opp','right'); }
+      return;
+    }
+  }
+
+  render();
+  requestAnimationFrame(tick);
+}
+
+function awardCorner(team, side){
+  running = false;
+  const teamName = team==='mine' ? state.teamName : OPPONENTS[state.round].name;
+  showStatus(`🚩 קרן ל${teamName}!`);
+  setTimeout(()=>{
+    const cornerY = Math.random()<0.5 ? goalTop-6 : goalBottom+6;
+    ball.y = Math.max(6, Math.min(PH-6, cornerY));
+    ball.x = side==='left' ? 8 : PW-8;
+    ball.vx = 0; ball.vy = 0;
+    carrier = null;
+    lastTouchTeam = null;
+    running = true;
+    requestAnimationFrame(tick);
+  }, 1000);
+}
+
+function awardGoalKick(team, side){
+  running = false;
+  showStatus("🥅 בעיטת קרקע");
+  setTimeout(()=>{
+    ball.x = side==='left' ? 45 : PW-45;
+    ball.y = PH/2;
+    ball.vx = 0; ball.vy = 0;
+    carrier = null;
+    lastTouchTeam = null;
+    running = true;
+    requestAnimationFrame(tick);
+  }, 900);
+}
+
+/* ---- rendering ---- */
+function drawCrowd(yStart, height){
+  ctx.fillStyle = '#0d2818';
+  ctx.fillRect(0, yStart, PW, height);
+  const cols = 44;
+  for(let i=0;i<cols;i++){
+    const x = (i+0.5)*(PW/cols);
+    const isHome = x < PW/2;
+    ctx.fillStyle = isHome ? '#ffc93c' : '#e6484f';
+    const jitter = (i%2===0) ? 0 : 3;
+    ctx.beginPath(); ctx.arc(x, yStart+height*0.32+jitter, 2.1, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, yStart+height*0.72-jitter, 2.1, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+function drawGoal(isLeft){
+  const w = 34;
+  const gx = isLeft ? 0 : PW-w;
+  const p1 = worldToScreen(gx, goalTop);
+  const p2 = worldToScreen(gx+w, goalBottom);
+  const rx = p1.sx, ry = p1.sy, rw = p2.sx-p1.sx, rh = p2.sy-p1.sy;
+
+  ctx.strokeStyle = 'rgba(255,255,255,.45)';
+  ctx.lineWidth = 1;
+  for(let i=1;i<5;i++){
+    const nx = rx + (rw/5)*i;
+    ctx.beginPath(); ctx.moveTo(nx, ry); ctx.lineTo(nx, ry+rh); ctx.stroke();
+  }
+  for(let j=1;j<4;j++){
+    const ny = ry + (rh/4)*j;
+    ctx.beginPath(); ctx.moveTo(rx, ny); ctx.lineTo(rx+rw, ny); ctx.stroke();
+  }
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(rx, ry, rw, rh);
+}
+
+function applyGlitch(){
+  const bands = 3 + Math.floor(Math.random()*3);
+  for(let i=0;i<bands;i++){
+    const by = Math.random()*CANVAS_H;
+    const bh = 4 + Math.random()*12;
+    const shift = (Math.random()-0.5) * 30;
+    ctx.drawImage(canvas, 0, by*(canvas.height/CANVAS_H), canvas.width, bh*(canvas.height/CANVAS_H),
+                  shift, by, PW, bh);
+  }
+  ctx.globalAlpha = 0.14;
+  ctx.fillStyle = Math.random()<0.5 ? '#ff00c8' : '#00e5ff';
+  ctx.fillRect(0,0,PW,CANVAS_H);
+  ctx.globalAlpha = 1;
+}
+
+function render(){
+  updateCamera();
+
+  ctx.clearRect(0,0,PW,CANVAS_H);
+  drawCrowd(0, STAND_H);
+  drawCrowd(PH+STAND_H, STAND_H);
+
+  ctx.save();
+  ctx.translate(0, STAND_H);
+
+  // grass stripes, panned/zoomed with the camera
+  const stripeW = 28;
+  for(let x=0, i=0; x<PW; x+=stripeW, i++){
+    const x2 = Math.min(x+stripeW, PW);
+    const s1 = worldToScreen(x, camera.y).sx;
+    const s2 = worldToScreen(x2, camera.y).sx;
+    ctx.fillStyle = i%2===0 ? '#2fa968' : '#279b5c';
+    ctx.fillRect(s1, -20, s2-s1, PH+40);
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,.8)';
+  ctx.lineWidth = 2;
+  const clTop = worldToScreen(PW/2, 0), clBot = worldToScreen(PW/2, PH);
+  ctx.beginPath(); ctx.moveTo(clTop.sx, clTop.sy); ctx.lineTo(clBot.sx, clBot.sy); ctx.stroke();
+
+  const cc = worldToScreen(PW/2, PH/2);
+  ctx.beginPath();
+  ctx.ellipse(cc.sx, cc.sy, 26*ZOOM, 26*ZOOM*OBLIQUE_SQUISH, 0, 0, Math.PI*2);
+  ctx.stroke();
+
+  drawGoal(true);
+  drawGoal(false);
+
+  const withDepth = arr => arr.slice().sort((a,b)=>a.y-b.y);
+  withDepth(oppTeam).forEach(e=> drawEntity(e, '#ffffff', '#e6484f', e.emoji, false));
+  withDepth(myTeam).forEach(e=> drawEntity(e, '#ffc93c', '#134d2e', e.emoji, e===controlled));
+
+  const bp = worldToScreen(ball.x, ball.y);
+  ctx.beginPath();
+  ctx.arc(bp.sx, bp.sy, 7*ZOOM*0.6, 0, Math.PI*2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#1b2a1e';
+  ctx.stroke();
+
+  ctx.restore();
+
+  if(state.funMode === 'glitch'){
+    if(glitchBurstFrames > 0){ applyGlitch(); glitchBurstFrames--; }
+    else {
+      glitchNextIn--;
+      if(glitchNextIn <= 0){ glitchBurstFrames = 5+Math.floor(Math.random()*6); glitchNextIn = 80+Math.random()*140; }
+    }
+  }
+}
+
+function roundRect(c,x,y,w,h,r){
+  c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r);
+  c.arcTo(x,y,x+w,y,r);
+  c.closePath();
+}
+
+function drawEntity(e, fill, ringColor, emoji, isControlled){
+  const {sx, sy} = worldToScreen(e.x, e.y);
+  const s = ZOOM * 0.6;
+
+  const speedMag = Math.hypot(e.vx||0, e.vy||0);
+  e.animPhase = (e.animPhase||0) + speedMag*0.55 + 0.03;
+  const swing = Math.sin(e.animPhase) * Math.min(7, 3.5 + speedMag*2.2) * s;
+
+  let bob = 0;
+  if(state.funMode === 'bounce'){
+    bob = Math.max(0, Math.sin(e.animPhase)) * 20 * s * (0.35 + Math.min(1, speedMag*0.6));
+    if(bob > 1.5){
+      const shadowShrink = 1 - Math.min(0.55, bob/40);
+      ctx.beginPath();
+      ctx.ellipse(sx, sy+9*s, 9*s*shadowShrink, 3*s*shadowShrink, 0, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(0,0,0,.28)';
+      ctx.fill();
+    }
+  }
+  const px = sx, py = sy - bob;
+
+  const hipX = px, hipY = py+6*s;
+  const shoulderY = py-6*s;
+  const headY = py-14*s;
+
+  ctx.lineCap = 'round';
+
+  ctx.strokeStyle = ringColor;
+  ctx.lineWidth = 3*s;
+  ctx.beginPath();
+  ctx.moveTo(hipX-2*s, hipY);
+  ctx.lineTo(hipX-2*s-swing*0.6, hipY+9*s);
+  ctx.stroke();
+
+  ctx.lineWidth = 2.3*s;
+  ctx.beginPath();
+  ctx.moveTo(hipX-5*s, shoulderY);
+  ctx.lineTo(hipX-5*s+swing*0.45, shoulderY+7*s);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(hipX+5*s, shoulderY);
+  ctx.lineTo(hipX+5*s-swing*0.45, shoulderY+7*s);
+  ctx.stroke();
+
+  ctx.lineWidth = 3*s;
+  ctx.beginPath();
+  ctx.moveTo(hipX+2*s, hipY);
+  ctx.lineTo(hipX+2*s+swing*0.6, hipY+9*s);
+  ctx.stroke();
+
+  ctx.beginPath();
+  roundRect(ctx, hipX-6*s, shoulderY, 12*s, 13*s, 4*s);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.lineWidth = (isControlled ? 2.5 : 1.5) * s;
+  ctx.strokeStyle = isControlled ? '#fff' : ringColor;
+  ctx.stroke();
+
+  ctx.fillStyle = ringColor;
+  ctx.fillRect(hipX-6*s, hipY-4*s, 12*s, 5*s);
+
+  ctx.beginPath();
+  ctx.arc(px, headY, 6*s, 0, Math.PI*2);
+  ctx.fillStyle = '#ffe0b2';
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(0,0,0,.15)';
+  ctx.stroke();
+
+  ctx.font = `${Math.max(6,9*s)}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(emoji, px, headY);
+
+  if(isControlled){
+    ctx.beginPath();
+    ctx.arc(px, py-1*s, 21*s, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,255,255,.75)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(px, headY-15*s);
+    ctx.lineTo(px-5*s, headY-9*s);
+    ctx.lineTo(px+5*s, headY-9*s);
+    ctx.closePath();
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+  }
+}
+
+/* ================= screen 5: trophy ================= */
+function showTrophy(){
+  $('trophyText').textContent = `${state.teamName} ניצחו את כל היריבות והרימו את גביע הרחוב!`;
+  show('screen-trophy');
+  setRail(4);
+  launchConfetti();
+}
+
+function launchConfetti(){
+  const emojis = ["🎉","⚽","🏆","✨","🎊"];
+  for(let i=0;i<24;i++){
+    const el = document.createElement('div');
+    el.className = "confetti";
+    el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.left = Math.random()*100 + "vw";
+    el.style.animationDuration = (2 + Math.random()*1.5) + "s";
+    el.style.fontSize = (14 + Math.random()*16) + "px";
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 4000);
+  }
+}
+
+$('btnRestartWin').addEventListener('click', resetGame);
+
+function resetGame(){
+  running = false;
+  clearInterval(timerInterval);
+  state = {teamName:"", selected:[], round:0, matchLength:'short', squadSize:5};
+  $('teamName').value = "";
+  document.querySelectorAll('#squadToggle .length-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#squadToggle .length-btn[data-size="5"]').classList.add('active');
+  hide('screen-match');
+  hide('screen-trophy');
+  hide('screen-bracket');
+  hide('screen-draft');
+  show('screen-name');
+  setRail(0);
+}
+
+setRail(0);
+</script>
+</body>
+</html>
