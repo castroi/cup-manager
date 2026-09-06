@@ -145,6 +145,30 @@
     cursor:not-allowed;
   }
   button.primary:active:not(:disabled){transform:translateY(3px); box-shadow:0 2px 0 var(--pitch-dark);}
+  button.secondary{
+    width:100%;
+    padding:11px;
+    border:2px solid var(--pitch);
+    border-radius:16px;
+    background:transparent;
+    color:var(--pitch-dark);
+    font-family:'Baloo 2';
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:8px;
+  }
+  button.secondary:active{transform:scale(.97);}
+  .upgrade-line{
+    text-align:center;
+    font-size:12px;
+    font-weight:600;
+    color:#8a5a00;
+    background:#fff3d6;
+    border-radius:10px;
+    padding:6px;
+    margin-bottom:10px;
+  }
 
   input#teamName{
     width:100%;
@@ -280,6 +304,54 @@
   }
   @keyframes chargeGrow{ from{transform:scale(.6);} to{transform:scale(1.3);} }
 
+  .action-cluster{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+  }
+  .action-row{
+    display:flex;
+    gap:6px;
+  }
+  .mini-btn{
+    width:38px; height:38px;
+    border-radius:50%;
+    border:2px solid var(--pitch);
+    background:#fff;
+    font-size:15px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+    cursor:pointer;
+    touch-action:none;
+  }
+  .mini-btn span{ display:none; }
+  .mini-btn:active{ transform:scale(.92); background:#e9f7ee; }
+
+  .p2-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:8px;
+    padding:6px 8px;
+    background:#fdeaea;
+    border-radius:12px;
+    border:2px dashed var(--red);
+  }
+  .p2-label{
+    font-family:'Baloo 2';
+    font-weight:700;
+    font-size:12px;
+    color:var(--red);
+  }
+  .joy-base.small{ width:52px; height:52px; }
+  .joy-base.small .joy-knob{ width:24px; height:24px; margin-left:-12px; margin-top:-12px; }
+  .shoot-btn.small{ width:42px; height:42px; font-size:16px; }
+
   .hint{text-align:center; font-size:11px; color:var(--muted); margin-top:8px;}
 
   .result-banner{
@@ -333,6 +405,7 @@
   <!-- SCREEN 3: bracket -->
   <div class="card hidden" id="screen-bracket">
     <h2 id="bracketTeamName">המסלול לגביע</h2>
+    <div class="upgrade-line" id="upgradeLine"></div>
     <div class="bracket" id="bracketList"></div>
     <div class="length-toggle" id="lengthToggle">
       <div class="length-btn active" data-len="short">משחק מהיר<span class="sub">45 שניות</span></div>
@@ -343,7 +416,12 @@
       <div class="length-btn" data-mode="bounce">קפיצות ענק<span class="sub">ריצה מוגזמת</span></div>
       <div class="length-btn" data-mode="glitch">גליץ׳<span class="sub">מסך משתולל</span></div>
     </div>
+    <div class="length-toggle" id="opponentToggle">
+      <div class="length-btn active" data-vs="cpu">נגד המחשב<span class="sub">יריב AI</span></div>
+      <div class="length-btn" data-vs="friend">נגד חבר<span class="sub">אותו מכשיר</span></div>
+    </div>
     <button class="primary" id="btnPlayMatch">שרוק להתחלת המשחק</button>
+    <button class="secondary" id="btnPractice">🎯 משחק אימון (לא נחשב לליגה)</button>
   </div>
 
   <!-- SCREEN 4: match (live controllable) -->
@@ -363,14 +441,26 @@
     <div class="clock">⏱️ <span id="timerLabel">45</span></div>
     <div class="match-status" id="matchStatus"></div>
 
+    <div class="p2-bar hidden" id="p2controls">
+      <span class="p2-label">שחקן 2</span>
+      <div class="joy-base small" id="joyBase2"><div class="joy-knob" id="joyKnob2"></div></div>
+      <button class="shoot-btn small" id="shootBtn2"><span class="ring"></span>⚽</button>
+    </div>
+
     <div class="game-wrap" id="gameWrap">
       <canvas id="pitchCanvas"></canvas>
     </div>
     <div class="controls-bar">
       <div class="joy-base" id="joyBase"><div class="joy-knob" id="joyKnob"></div></div>
-      <button class="shoot-btn" id="shootBtn"><span class="ring"></span>⚽</button>
+      <div class="action-cluster">
+        <div class="action-row">
+          <button class="mini-btn" id="tackleBtn">🦵<span>תיקול</span></button>
+          <button class="mini-btn" id="liftBtn">⬆️<span>הרמה</span></button>
+        </div>
+        <button class="shoot-btn" id="shootBtn"><span class="ring"></span>⚽</button>
+      </div>
     </div>
-    <div class="hint">🕹️ ג'ויסטיק שמאלי לניוד • החזק את כפתור הכדור כדי לבעוט חזק</div>
+    <div class="hint">🕹️ ג'ויסטיק לניוד • החזק את הכדור לבעיטה • תיקול לגניבת כדור • הרמה לחיפוי מעל השוער</div>
 
     <div id="resultArea"></div>
     <button class="primary" id="btnContinue" style="display:none;">המשך</button>
@@ -411,15 +501,19 @@ const PLAYERS = [
   {name:"נועם אלבז", pos:"מגן", emoji:"⛰️", atk:1, def:5, special:"הגנה בלתי מעורערת"},
 ];
 
-const OPPONENTS = [
-  {name:"נמרי הצפון", emoji:"🐯", atk:2.2, def:2.0, roundLabel:"סיבוב 1"},
-  {name:"ברקים כחולים", emoji:"🌩️", atk:2.7, def:2.5, roundLabel:"סיבוב 2"},
-  {name:"האריות האדומים", emoji:"🦁", atk:3.1, def:2.9, roundLabel:"חצי גמר"},
-  {name:"כוכבי הזהב", emoji:"🌟", atk:3.6, def:3.3, roundLabel:"הגמר הגדול"},
+const LEAGUES = [
+  {num:5, leagueName:"ליגת העל",        teamName:"כוכבי הירקון",     emoji:"🌊", atk:2.0, def:1.8, keeperSkill:0.18},
+  {num:4, leagueName:"הליגה הצרפתית",   teamName:"האריות של פרובאנס", emoji:"🐓", atk:2.5, def:2.3, keeperSkill:0.26},
+  {num:3, leagueName:"הליגה הגרמנית",   teamName:"פלדת הריין",       emoji:"🦅", atk:2.9, def:2.7, keeperSkill:0.34},
+  {num:2, leagueName:"הליגה הספרדית",   teamName:"להבת אנדלוסיה",    emoji:"🔥", atk:3.3, def:3.1, keeperSkill:0.42},
+  {num:1, leagueName:"הליגה האנגלית",   teamName:"אבירי לונדון",     emoji:"👑", atk:3.8, def:3.6, keeperSkill:0.50},
 ];
+const PRACTICE_OPPONENT = {num:0, leagueName:"אימון", teamName:"קבוצת אימון", emoji:"🎯", atk:2.8, def:2.6, keeperSkill:0.30};
 
 /* ================= app state ================= */
-let state = { teamName:"", selected:[], round:0, matchLength:'short', squadSize:5, funMode:'normal' };
+let state = { teamName:"", selected:[], round:0, matchLength:'short', squadSize:5, funMode:'normal', upgrade:0, vsFriend:false, gameInLeague:0 };
+let isPracticeMatch = false;
+function currentOpponent(){ return isPracticeMatch ? PRACTICE_OPPONENT : LEAGUES[state.round]; }
 
 function $(id){return document.getElementById(id);}
 function show(id){$(id).classList.remove('hidden');}
@@ -436,6 +530,9 @@ function setRail(step){
 $('btnNameNext').addEventListener('click', ()=>{
   const val = $('teamName').value.trim();
   state.teamName = val || "הקבוצה שלי";
+  state.round = 0;
+  state.gameInLeague = 0;
+  state.upgrade = 0;
   hide('screen-name');
   renderDraft();
   show('screen-draft');
@@ -496,7 +593,6 @@ document.querySelectorAll('#squadToggle .length-btn').forEach(btn=>{
 
 $('btnDraftNext').addEventListener('click', ()=>{
   hide('screen-draft');
-  state.round = 0;
   renderBracket();
   show('screen-bracket');
   setRail(2);
@@ -504,45 +600,78 @@ $('btnDraftNext').addEventListener('click', ()=>{
 
 function myPower(){
   const chosen = state.selected.map(i=>PLAYERS[i]);
-  const atk = chosen.reduce((s,p)=>s+p.atk,0)/chosen.length;
-  const def = chosen.reduce((s,p)=>s+p.def,0)/chosen.length;
+  const atk = chosen.reduce((s,p)=>s+p.atk,0)/chosen.length + state.upgrade;
+  const def = chosen.reduce((s,p)=>s+p.def,0)/chosen.length + state.upgrade;
   return {atk, def};
 }
 
 /* ================= screen 3: bracket ================= */
 function renderBracket(){
   $('bracketTeamName').textContent = `המסלול של ${state.teamName}`;
+  $('upgradeLine').textContent = state.upgrade > 0
+    ? `⭐ שדרוג קבוצתי: +${state.upgrade} להתקפה ולהגנה`
+    : `עברו ליגה כדי לקבל שדרוג קבוע לכל השחקנים`;
   const list = $('bracketList');
   list.innerHTML = "";
-  OPPONENTS.forEach((o, i)=>{
+  LEAGUES.forEach((o, i)=>{
     const div = document.createElement('div');
     let cls = "bracket-item";
     let badge = "";
+    let subLabel = `ליגה ${o.num} • ${o.leagueName}`;
     if(i < state.round){ cls += " won"; badge = "✅"; }
-    else if(i === state.round){ cls += " now"; badge = "▶️"; }
+    else if(i === state.round){
+      cls += " now"; badge = "▶️";
+      subLabel += ` • משחק ${state.gameInLeague+1} מתוך 5`;
+    }
     else { badge = o.emoji; }
     div.className = cls;
     div.innerHTML = `
-      <div class="num">${i+1}</div>
+      <div class="num">${o.num}</div>
       <div class="info">
-        <div class="team">${o.name} ${o.emoji}</div>
-        <div class="round-label">${o.roundLabel}</div>
+        <div class="team">${o.teamName} ${o.emoji}</div>
+        <div class="round-label">${subLabel}</div>
       </div>
       <div class="badge">${badge}</div>`;
     list.appendChild(div);
   });
-  $('btnPlayMatch').textContent = state.round===0 ? "שרוק להתחלת המשחק" : "המשך למשחק הבא";
+  $('btnPlayMatch').textContent = (state.round===0 && state.gameInLeague===0) ? "שרוק להתחלת המשחק" : "המשך למשחק הבא";
 }
 
-document.querySelectorAll('.length-btn').forEach(btn=>{
+document.querySelectorAll('#lengthToggle .length-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.length-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#lengthToggle .length-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     state.matchLength = btn.dataset.len;
   });
 });
 
+document.querySelectorAll('#funToggle .length-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#funToggle .length-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.funMode = btn.dataset.mode;
+  });
+});
+
+document.querySelectorAll('#opponentToggle .length-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#opponentToggle .length-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.vsFriend = btn.dataset.vs === 'friend';
+    $('p2controls').classList.toggle('hidden', !state.vsFriend);
+  });
+});
+
+$('btnPractice').addEventListener('click', ()=>{
+  isPracticeMatch = true;
+  hide('screen-bracket');
+  show('screen-match');
+  setRail(2);
+  startMatch();
+});
+
 $('btnPlayMatch').addEventListener('click', ()=>{
+  isPracticeMatch = false;
   hide('screen-bracket');
   show('screen-match');
   setRail(2);
@@ -582,7 +711,8 @@ function updateCamera(){
 }
 
 let canvas, ctx;
-let myTeam = [], oppTeam = [], controlled, ball;
+let myTeam = [], oppTeam = [], controlled, controlled2, ball;
+let keeperMine, keeperOpp;
 let carrier = null;
 let lastTouchTeam = null;
 let foulLockFrames = 0;
@@ -590,17 +720,72 @@ let glitchBurstFrames = 0, glitchNextIn = 90;
 let joystickVec = {x:0, y:0};
 let joyActive = false, joyPointerId = null;
 let chargeStart = null, charging = false;
+let joystickVec2 = {x:0, y:0};
+let joyActive2 = false, joyPointerId2 = null;
+let chargeStart2 = null, charging2 = false;
 let running = false;
 let timerInterval = null;
 let timeLeft = 45;
 let mode = 'regular'; // 'regular' | 'overtime'
 let homeScore = 0, awayScore = 0;
-let speedPlayer, speedAI, maxPower, minPower, captureBonusMine, oppShootChance;
+let speedPlayer, speedAI, maxPower, minPower, captureBonusMine, oppShootChance, mySkill, oppSkill;
 let engineInit = false;
 
 function clampEntity(e){
   e.x = Math.max(12, Math.min(PW-12, e.x));
   e.y = Math.max(12, Math.min(PH-12, e.y));
+}
+
+function setupJoystick(baseEl, knobEl, radius, setVec){
+  let active = false, pid = null;
+  baseEl.addEventListener('pointerdown', (e)=>{
+    active = true; pid = e.pointerId;
+    baseEl.setPointerCapture(e.pointerId);
+    update(e);
+  });
+  baseEl.addEventListener('pointermove', (e)=>{ if(active && e.pointerId===pid) update(e); });
+  function end(e){
+    if(e.pointerId !== pid) return;
+    active = false; pid = null;
+    setVec({x:0,y:0});
+    knobEl.style.transform = `translate(0px,0px)`;
+  }
+  baseEl.addEventListener('pointerup', end);
+  baseEl.addEventListener('pointercancel', end);
+  function update(e){
+    const rect = baseEl.getBoundingClientRect();
+    const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+    let dx = e.clientX-cx, dy = e.clientY-cy;
+    const dist = Math.hypot(dx,dy);
+    const clamped = Math.min(dist, radius);
+    const ang = Math.atan2(dy,dx);
+    const kx = Math.cos(ang)*clamped, ky = Math.sin(ang)*clamped;
+    knobEl.style.transform = `translate(${kx}px,${ky}px)`;
+    setVec({x: kx/radius, y: ky/radius});
+  }
+}
+
+function setupShootButton(btnEl, getCarrier, getEntity){
+  let charging = false, chargeStart = null;
+  btnEl.addEventListener('pointerdown', ()=>{
+    if(!running) return;
+    if(getCarrier() !== getEntity()) return;
+    charging = true;
+    chargeStart = performance.now();
+    btnEl.classList.add('charging');
+  });
+  function release(){
+    if(!charging) return;
+    charging = false;
+    btnEl.classList.remove('charging');
+    const entity = getEntity();
+    if(getCarrier() !== entity) return;
+    const held = Math.min(performance.now()-chargeStart, MAX_CHARGE_MS);
+    const power = minPower + (held/MAX_CHARGE_MS)*(maxPower-minPower);
+    doShoot(entity, entity.facing || {x: entity.team==='mine'?1:-1, y:0}, power);
+  }
+  btnEl.addEventListener('pointerup', release);
+  btnEl.addEventListener('pointerleave', ()=>{ if(charging) release(); });
 }
 
 function initEngineOnce(){
@@ -612,58 +797,53 @@ function initEngineOnce(){
   canvas.width = PW*dpr; canvas.height = CANVAS_H*dpr;
   ctx.scale(dpr,dpr);
 
-  // joystick
-  const joyBase = $('joyBase'), joyKnob = $('joyKnob');
-  const JOY_R = 32;
-  joyBase.addEventListener('pointerdown', (e)=>{
-    joyActive = true; joyPointerId = e.pointerId;
-    joyBase.setPointerCapture(e.pointerId);
-    updateJoy(e);
-  });
-  joyBase.addEventListener('pointermove', (e)=>{
-    if(joyActive && e.pointerId === joyPointerId) updateJoy(e);
-  });
-  function endJoy(e){
-    if(e.pointerId !== joyPointerId) return;
-    joyActive = false; joyPointerId = null;
-    joystickVec = {x:0,y:0};
-    joyKnob.style.transform = `translate(0px,0px)`;
-  }
-  joyBase.addEventListener('pointerup', endJoy);
-  joyBase.addEventListener('pointercancel', endJoy);
-  function updateJoy(e){
-    const rect = joyBase.getBoundingClientRect();
-    const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
-    let dx = e.clientX - cx, dy = e.clientY - cy;
-    const dist = Math.hypot(dx,dy);
-    const clamped = Math.min(dist, JOY_R);
-    const ang = Math.atan2(dy,dx);
-    const kx = Math.cos(ang)*clamped, ky = Math.sin(ang)*clamped;
-    joyKnob.style.transform = `translate(${kx}px,${ky}px)`;
-    joystickVec = {x: kx/JOY_R, y: ky/JOY_R};
-  }
+  setupJoystick($('joyBase'), $('joyKnob'), 32, v=>{ joystickVec = v; });
+  setupShootButton($('shootBtn'), ()=>carrier, ()=>controlled);
 
-  // shoot button
-  const shootBtn = $('shootBtn');
-  shootBtn.addEventListener('pointerdown', (e)=>{
-    if(!running) return;
-    if(carrier !== controlled) return;
-    charging = true;
-    chargeStart = performance.now();
-    shootBtn.classList.add('charging');
-  });
-  function releaseShot(){
-    if(!charging) return;
-    charging = false;
-    shootBtn.classList.remove('charging');
-    if(carrier !== controlled){ return; }
-    const held = Math.min(performance.now() - chargeStart, MAX_CHARGE_MS);
-    const power = minPower + (held/MAX_CHARGE_MS)*(maxPower-minPower);
-    const f = controlled.facing || {x:1,y:0};
-    doShoot(controlled, f, power);
+  setupJoystick($('joyBase2'), $('joyKnob2'), 22, v=>{ joystickVec2 = v; });
+  setupShootButton($('shootBtn2'), ()=>carrier, ()=>controlled2);
+
+  $('tackleBtn').addEventListener('pointerdown', attemptTackle);
+  $('liftBtn').addEventListener('pointerdown', attemptLift);
+}
+
+function attemptTackle(){
+  if(!running || ball.airborne) return;
+  if(!carrier || carrier.team === 'mine') { return; }
+  const dist = Math.hypot(controlled.x-ball.x, controlled.y-ball.y);
+  if(dist > CAPTURE_R + 16) return;
+  const chance = 0.55 + captureBonusMine*0.03;
+  if(Math.random() < chance){
+    carrier = controlled;
+    lastTouchTeam = 'mine';
+    showStatus('🦵 תיקול מוצלח!');
+  } else if(Math.random() < FOUL_CHANCE*1.6){
+    showStatus('🚫 פאול על התיקול!');
+    foulLockFrames = 25;
+  } else {
+    showStatus('❌ התיקול לא הצליח');
   }
-  shootBtn.addEventListener('pointerup', releaseShot);
-  shootBtn.addEventListener('pointerleave', ()=>{ if(charging) releaseShot(); });
+}
+
+function attemptLift(){
+  if(!running) return;
+  if(carrier !== controlled) return;
+  const f = controlled.facing || {x:1,y:0};
+  doLift(controlled, f);
+  showStatus('⬆️ הרמה מעל ההגנה!');
+}
+
+function doLift(entity, dir){
+  const mag = Math.hypot(dir.x, dir.y) || 1;
+  const nx = dir.x/mag, ny = dir.y/mag;
+  ball.vx = nx*6.5;
+  ball.vy = ny*6.5;
+  ball.x += nx*(CAPTURE_R+5);
+  ball.y += ny*(CAPTURE_R+5);
+  carrier = null;
+  ball.airborne = true;
+  clearTimeout(ball._airTimer);
+  ball._airTimer = setTimeout(()=>{ ball.airborne = false; }, 550);
 }
 
 function generateFormation(count, side){
@@ -704,25 +884,35 @@ function makeEntities(){
   oppTeam = buildTeam(state.squadSize, 'opp');
   myTeam.forEach((e,i)=>{ e.emoji = PLAYERS[state.selected[i]]?.emoji || '👤'; });
   oppTeam.forEach(e=>{ e.emoji = '🛡️'; });
-  ball = {x:PW/2, y:PH/2, vx:0, vy:0};
+  keeperMine = {team:'mine', x:20, y:PH/2, vx:0, vy:0, facing:{x:1,y:0}, animPhase:0};
+  keeperOpp  = {team:'opp',  x:PW-20, y:PH/2, vx:0, vy:0, facing:{x:-1,y:0}, animPhase:0};
+  ball = {x:PW/2, y:PH/2, vx:0, vy:0, airborne:false};
   carrier = null;
   lastTouchTeam = null;
   foulLockFrames = 0;
   controlled = myTeam.reduce((closest,e)=> (
     Math.hypot(e.x-ball.x,e.y-ball.y) < Math.hypot(closest.x-ball.x,closest.y-ball.y) ? e : closest
   ), myTeam[0]);
+  controlled2 = oppTeam.reduce((closest,e)=> (
+    Math.hypot(e.x-ball.x,e.y-ball.y) < Math.hypot(closest.x-ball.x,closest.y-ball.y) ? e : closest
+  ), oppTeam[0]);
 }
 
 function resetPositions(){
   myTeam.forEach(e=>{ e.x=e.homeX; e.y=e.homeY; e.vx=0; e.vy=0; });
   oppTeam.forEach(e=>{ e.x=e.homeX; e.y=e.homeY; e.vx=0; e.vy=0; });
-  ball.x=PW/2; ball.y=PH/2; ball.vx=0; ball.vy=0;
+  keeperMine.x=20; keeperMine.y=PH/2;
+  keeperOpp.x=PW-20; keeperOpp.y=PH/2;
+  ball.x=PW/2; ball.y=PH/2; ball.vx=0; ball.vy=0; ball.airborne=false;
   carrier = null;
   lastTouchTeam = null;
   foulLockFrames = 0;
   controlled = myTeam.reduce((closest,e)=> (
     Math.hypot(e.x-ball.x,e.y-ball.y) < Math.hypot(closest.x-ball.x,closest.y-ball.y) ? e : closest
   ), myTeam[0]);
+  controlled2 = oppTeam.reduce((closest,e)=> (
+    Math.hypot(e.x-ball.x,e.y-ball.y) < Math.hypot(closest.x-ball.x,closest.y-ball.y) ? e : closest
+  ), oppTeam[0]);
 }
 
 function updateControlledSwitch(){
@@ -733,6 +923,16 @@ function updateControlledSwitch(){
     if(d < bestDist - 10){ best = e; bestDist = d; }
   });
   controlled = best;
+}
+
+function updateControlledSwitch2(){
+  let best = controlled2, bestDist = Math.hypot(controlled2.x-ball.x, controlled2.y-ball.y);
+  oppTeam.forEach(e=>{
+    if(e === controlled2) return;
+    const d = Math.hypot(e.x-ball.x, e.y-ball.y);
+    if(d < bestDist - 10){ best = e; bestDist = d; }
+  });
+  controlled2 = best;
 }
 
 function showStatus(text){
@@ -756,7 +956,7 @@ function updateTimerDisplay(){
 function startMatch(){
   initEngineOnce();
   clearInterval(timerInterval);
-  const opp = OPPONENTS[state.round];
+  const opp = currentOpponent();
   const my = myPower();
 
   speedPlayer = 2.25 + (my.atk-3)*0.15;
@@ -765,17 +965,25 @@ function startMatch(){
   maxPower = 7 + (my.atk-3)*0.6;
   captureBonusMine = (my.def-3)*1.4;
   oppShootChance = Math.max(0.02, 0.055 - (my.def-3)*0.006);
+  mySkill = Math.min(0.6, 0.12 + (my.def-1)*0.05);
+  oppSkill = opp.keeperSkill;
 
-  $('roundLabel').textContent = opp.roundLabel;
+  $('roundLabel').textContent = isPracticeMatch
+    ? "🎯 משחק אימון"
+    : `ליגה ${opp.num} • ${opp.leagueName} • משחק ${state.gameInLeague+1}/5`;
   $('homeCrest').textContent = "⚽";
   $('homeName').textContent = state.teamName;
   $('awayCrest').textContent = opp.emoji;
-  $('awayName').textContent = opp.name;
+  $('awayName').textContent = opp.teamName;
   homeScore = 0; awayScore = 0;
   updateScoreDisplay(false);
   showStatus("🔔 השופט שורק! המשחק מתחיל");
   $('resultArea').innerHTML = "";
   $('btnContinue').style.display = "none";
+
+  camera = {x: PW/2, y: PH/2};
+  glitchBurstFrames = 0;
+  glitchNextIn = 90;
 
   makeEntities();
   mode = 'regular';
@@ -800,7 +1008,7 @@ function startTimer(){
 }
 
 function onTimerZero(){
-  const opp = OPPONENTS[state.round];
+  const opp = currentOpponent();
   running = false;
   if(mode === 'regular'){
     if(homeScore === awayScore){
@@ -822,13 +1030,13 @@ function onTimerZero(){
 }
 
 function endMatch(){
-  const opp = OPPONENTS[state.round];
+  const opp = currentOpponent();
   if(homeScore === awayScore){ penaltyShootoutWrapper(); return; }
   showResult(homeScore > awayScore, opp);
 }
 
 function penaltyShootoutWrapper(){
-  const opp = OPPONENTS[state.round];
+  const opp = currentOpponent();
   showStatus("🥅 סדרת פנדלים...");
   setTimeout(()=>{
     let mine=0, theirs=0;
@@ -849,27 +1057,59 @@ function showResult(won, opp){
   clearInterval(timerInterval);
   const area = $('resultArea');
   if(won){
-    area.innerHTML = `<div class="result-banner win">🎉 ${state.teamName} מנצחים את ${opp.name}!</div>`;
+    const willPromote = !isPracticeMatch && (state.gameInLeague+1) >= 5;
+    let extra = '';
+    if(!isPracticeMatch){
+      extra = willPromote
+        ? `<br>+1 מהניצחון ⭐ ועוד +2 מעליית ליגה! סה"כ +3 להתקפה ולהגנה`
+        : `<br>+1 להתקפה ולהגנה • משחק ${Math.min(5,state.gameInLeague+1)} מתוך 5 בליגה`;
+    }
+    area.innerHTML = `<div class="result-banner win">🎉 ${state.teamName} מנצחים את ${opp.teamName}!${extra}</div>`;
   } else {
-    area.innerHTML = `<div class="result-banner lose">😔 ${opp.name} ניצחו הפעם</div>`;
+    area.innerHTML = `<div class="result-banner lose">😔 ${opp.teamName} ניצחו הפעם</div>`;
   }
   const btn = $('btnContinue');
   btn.style.display = "block";
-  btn.textContent = won ? "המשך בטורניר" : "נסה שוב מההתחלה";
+
+  if(isPracticeMatch){
+    btn.textContent = "חזרה לתפריט";
+    btn.onclick = ()=>{
+      hide('screen-match');
+      renderBracket();
+      show('screen-bracket');
+    };
+    return;
+  }
+
+  btn.textContent = won ? "המשך בטורניר" : "החלף קבוצה ונסה שוב";
   btn.onclick = ()=>{
     if(won){
-      state.round++;
+      state.upgrade += 1;
+      state.gameInLeague++;
       hide('screen-match');
-      if(state.round >= OPPONENTS.length){
-        showTrophy();
-      } else {
-        renderBracket();
-        show('screen-bracket');
+      if(state.gameInLeague >= 5){
+        state.gameInLeague = 0;
+        state.upgrade += 2;
+        state.round++;
+        if(state.round >= LEAGUES.length){
+          showTrophy();
+          return;
+        }
       }
+      renderBracket();
+      show('screen-bracket');
     } else {
-      resetGame();
+      changeTeamAfterLoss();
     }
   };
+}
+
+function changeTeamAfterLoss(){
+  hide('screen-match');
+  state.selected = [];
+  renderDraft();
+  show('screen-draft');
+  setRail(1);
 }
 
 /* ---- shooting ---- */
@@ -926,29 +1166,46 @@ function updateAI(entity){
   steerTowards(entity, target, speedAI);
 }
 
-function movePlayerFromJoystick(){
-  const {x:jx, y:jy} = joystickVec;
+function movePlayerFromJoystick(entity, joyVec){
+  const {x:jx, y:jy} = joyVec;
   const mag = Math.hypot(jx,jy);
   if(mag > 0.12){
     const clampedMag = Math.min(mag,1);
     const nx = jx/mag, ny = jy/mag;
-    controlled.vx = nx*speedPlayer*clampedMag;
-    controlled.vy = ny*speedPlayer*clampedMag;
-    controlled.facing = {x:nx, y:ny};
+    entity.vx = nx*speedPlayer*clampedMag;
+    entity.vy = ny*speedPlayer*clampedMag;
+    entity.facing = {x:nx, y:ny};
   } else {
-    controlled.vx = 0; controlled.vy = 0;
+    entity.vx = 0; entity.vy = 0;
   }
-  controlled.x += controlled.vx;
-  controlled.y += controlled.vy;
-  clampEntity(controlled);
+  entity.x += entity.vx;
+  entity.y += entity.vy;
+  clampEntity(entity);
+}
+
+function updateKeepers(){
+  const targetMine = Math.max(goalTop+8, Math.min(goalBottom-8, ball.y));
+  const targetOpp = Math.max(goalTop+8, Math.min(goalBottom-8, ball.y));
+  keeperMine.y += (targetMine - keeperMine.y) * 0.15;
+  keeperOpp.y += (targetOpp - keeperOpp.y) * 0.15;
+  keeperMine.vx = 0; keeperMine.vy = targetMine - keeperMine.y;
+  keeperOpp.vx = 0; keeperOpp.vy = targetOpp - keeperOpp.y;
+}
+
+function keeperSaveCheck(shotY, keeperY, skill){
+  const dist = Math.abs(shotY - keeperY);
+  const reach = 26;
+  if(dist > reach) return false;
+  const chance = skill * (1 - dist/reach);
+  return Math.random() < chance;
 }
 
 function onGoal(scoringTeam){
   running = false;
   if(scoringTeam==='mine') homeScore++; else awayScore++;
   updateScoreDisplay(true);
-  const opp = OPPONENTS[state.round];
-  showStatus(scoringTeam==='mine' ? `⚽ גול לכם! ${homeScore}-${awayScore}` : `⚽ גול ל${opp.name}! ${homeScore}-${awayScore}`);
+  const opp = currentOpponent();
+  showStatus(scoringTeam==='mine' ? `⚽ גול לכם! ${homeScore}-${awayScore}` : `⚽ גול ל${opp.teamName}! ${homeScore}-${awayScore}`);
   if(mode === 'overtime'){
     setTimeout(()=>{ clearInterval(timerInterval); endMatch(); }, 1300);
   } else {
@@ -964,28 +1221,37 @@ function tick(){
   if(!running) return;
 
   updateControlledSwitch();
-  movePlayerFromJoystick();
+  movePlayerFromJoystick(controlled, joystickVec);
+  if(state.vsFriend){
+    updateControlledSwitch2();
+    movePlayerFromJoystick(controlled2, joystickVec2);
+  }
+  updateKeepers();
   markChasers(myTeam);
   markChasers(oppTeam);
   myTeam.forEach(e=>{ if(e !== controlled) updateAI(e); });
-  oppTeam.forEach(e=>updateAI(e));
+  oppTeam.forEach(e=>{ if(!(state.vsFriend && e === controlled2)) updateAI(e); });
 
-  let best=null, bestDist=Infinity;
-  myTeam.concat(oppTeam).forEach(e=>{
-    const bonus = e.team==='mine' ? captureBonusMine : 0;
-    const threshold = CAPTURE_R + bonus;
-    const d = Math.hypot(e.x-ball.x, e.y-ball.y);
-    if(d < threshold && d < bestDist){ bestDist = d; best = e; }
-  });
-
-  if(foulLockFrames > 0){
-    foulLockFrames--;
-  } else if(best && carrier && best.team !== carrier.team && best !== carrier && Math.random() < FOUL_CHANCE){
-    const team = carrier.team==='mine' ? state.teamName : OPPONENTS[state.round].name;
-    showStatus(`🚫 פאול! ${team} שומרים על הכדור`);
-    foulLockFrames = 25;
+  if(ball.airborne){
+    carrier = null;
   } else {
-    carrier = best;
+    let best=null, bestDist=Infinity;
+    myTeam.concat(oppTeam).forEach(e=>{
+      const bonus = e.team==='mine' ? captureBonusMine : 0;
+      const threshold = CAPTURE_R + bonus;
+      const d = Math.hypot(e.x-ball.x, e.y-ball.y);
+      if(d < threshold && d < bestDist){ bestDist = d; best = e; }
+    });
+
+    if(foulLockFrames > 0){
+      foulLockFrames--;
+    } else if(best && carrier && best.team !== carrier.team && best !== carrier && Math.random() < FOUL_CHANCE){
+      const team = carrier.team==='mine' ? state.teamName : currentOpponent().teamName;
+      showStatus(`🚫 פאול! ${team} שומרים על הכדור`);
+      foulLockFrames = 25;
+    } else {
+      carrier = best;
+    }
   }
   if(carrier) lastTouchTeam = carrier.team;
 
@@ -995,7 +1261,8 @@ function tick(){
     ball.y = carrier.y + f.y*DRIBBLE_OFFSET;
     ball.vx = 0; ball.vy = 0;
 
-    if(carrier !== controlled){
+    const isHuman = carrier===controlled || (state.vsFriend && carrier===controlled2);
+    if(!isHuman){
       const distGoal = carrier.team==='mine' ? (PW-carrier.x) : carrier.x;
       const shootChance = carrier.team==='mine' ? 0.05 : oppShootChance;
       if(distGoal < AI_SHOOT_RANGE && Math.random() < shootChance){
@@ -1012,12 +1279,28 @@ function tick(){
     if(ball.y > PH-8){ ball.y = PH-8; ball.vy *= -0.7; }
 
     if(ball.x < 4){
-      if(ball.y > goalTop && ball.y < goalBottom){ onGoal('opp'); return; }
+      if(ball.y > goalTop && ball.y < goalBottom){
+        if(!ball.airborne && keeperSaveCheck(ball.y, keeperMine.y, mySkill)){
+          showStatus('🧤 הצלה מדהימה של השוער!');
+          ball.x = 8; ball.vx = 2.5 + Math.random()*1.5; ball.vy = (Math.random()-0.5)*4;
+          lastTouchTeam = 'mine';
+          render(); requestAnimationFrame(tick); return;
+        }
+        onGoal('opp'); return;
+      }
       if(lastTouchTeam === 'mine'){ awardCorner('opp','left'); } else { awardGoalKick('mine','left'); }
       return;
     }
     if(ball.x > PW-4){
-      if(ball.y > goalTop && ball.y < goalBottom){ onGoal('mine'); return; }
+      if(ball.y > goalTop && ball.y < goalBottom){
+        if(!ball.airborne && keeperSaveCheck(ball.y, keeperOpp.y, oppSkill)){
+          showStatus('🧤 הצלה של שוער היריבה!');
+          ball.x = PW-8; ball.vx = -(2.5 + Math.random()*1.5); ball.vy = (Math.random()-0.5)*4;
+          lastTouchTeam = 'opp';
+          render(); requestAnimationFrame(tick); return;
+        }
+        onGoal('mine'); return;
+      }
       if(lastTouchTeam === 'opp'){ awardCorner('mine','right'); } else { awardGoalKick('opp','right'); }
       return;
     }
@@ -1029,7 +1312,7 @@ function tick(){
 
 function awardCorner(team, side){
   running = false;
-  const teamName = team==='mine' ? state.teamName : OPPONENTS[state.round].name;
+  const teamName = team==='mine' ? state.teamName : currentOpponent().teamName;
   showStatus(`🚩 קרן ל${teamName}!`);
   setTimeout(()=>{
     const cornerY = Math.random()<0.5 ? goalTop-6 : goalBottom+6;
@@ -1143,8 +1426,10 @@ function render(){
   drawGoal(false);
 
   const withDepth = arr => arr.slice().sort((a,b)=>a.y-b.y);
-  withDepth(oppTeam).forEach(e=> drawEntity(e, '#ffffff', '#e6484f', e.emoji, false));
+  withDepth(oppTeam).forEach(e=> drawEntity(e, '#ffffff', '#e6484f', e.emoji, state.vsFriend && e===controlled2));
   withDepth(myTeam).forEach(e=> drawEntity(e, '#ffc93c', '#134d2e', e.emoji, e===controlled));
+  drawEntity(keeperMine, '#39d353', '#0f5c28', '🧤', false);
+  drawEntity(keeperOpp, '#f5a623', '#7a4a00', '🧤', false);
 
   const bp = worldToScreen(ball.x, ball.y);
   ctx.beginPath();
@@ -1267,7 +1552,7 @@ function drawEntity(e, fill, ringColor, emoji, isControlled){
 
 /* ================= screen 5: trophy ================= */
 function showTrophy(){
-  $('trophyText').textContent = `${state.teamName} ניצחו את כל היריבות והרימו את גביע הרחוב!`;
+  $('trophyText').textContent = `${state.teamName} טיפסו מליגת העל עד לליגה האנגלית וניצחו את כולם - אלופת העל!`;
   show('screen-trophy');
   setRail(4);
   launchConfetti();
@@ -1292,10 +1577,14 @@ $('btnRestartWin').addEventListener('click', resetGame);
 function resetGame(){
   running = false;
   clearInterval(timerInterval);
-  state = {teamName:"", selected:[], round:0, matchLength:'short', squadSize:5};
+  isPracticeMatch = false;
+  state = {teamName:"", selected:[], round:0, matchLength:'short', squadSize:5, funMode:'normal', upgrade:0, vsFriend:false, gameInLeague:0};
   $('teamName').value = "";
   document.querySelectorAll('#squadToggle .length-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector('#squadToggle .length-btn[data-size="5"]').classList.add('active');
+  document.querySelectorAll('#opponentToggle .length-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#opponentToggle .length-btn[data-vs="cpu"]').classList.add('active');
+  $('p2controls')?.classList.add('hidden');
   hide('screen-match');
   hide('screen-trophy');
   hide('screen-bracket');
