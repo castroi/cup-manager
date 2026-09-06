@@ -52,6 +52,15 @@
     color:var(--pitch-dark);
   }
   .topbar .headline span{color:var(--gold); -webkit-text-stroke:0.6px var(--pitch-dark);}
+  .diamond-counter{
+    font-family:'Baloo 2';
+    font-weight:700;
+    font-size:14px;
+    color:#8a5a00;
+    background:#fff3d6;
+    border-radius:10px;
+    padding:4px 9px;
+  }
   .subtitle{font-size:13px; color:var(--muted);}
 
   .rail{
@@ -112,6 +121,29 @@
     margin-bottom:6px;
     font-weight:600;
   }
+  .player.premium{
+    border-color:var(--gold);
+    background:linear-gradient(160deg,#fff8e6,#fff0c2);
+    box-shadow:0 0 0 2px #ffc93c55;
+  }
+  .player.premium.selected{
+    border-color:#c9960a;
+  }
+  .player.premium.locked{
+    opacity:0.9;
+    filter:grayscale(0.15);
+  }
+  .price-tag{
+    font-family:'Baloo 2';
+    font-weight:800;
+    font-size:12px;
+    color:#8a5a00;
+    background:#ffe89c;
+    border-radius:8px;
+    padding:3px 8px;
+    display:inline-block;
+    margin-top:2px;
+  }
   .stat-row{display:flex; justify-content:center; gap:8px; font-size:11px;}
   .stat{padding:2px 6px; border-radius:8px; font-weight:700;}
   .stat.atk{background:#fde3d0; color:#b4460a;}
@@ -168,6 +200,36 @@
     border-radius:10px;
     padding:6px;
     margin-bottom:10px;
+  }
+  .missions-box{
+    border:2px solid var(--line);
+    border-radius:14px;
+    padding:10px 12px;
+    margin-bottom:12px;
+    background:#fbfdfa;
+  }
+  .missions-title{
+    font-family:'Baloo 2';
+    font-weight:700;
+    font-size:13px;
+    color:var(--pitch-dark);
+    margin-bottom:6px;
+  }
+  .mission-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+    padding:4px 0;
+    color:var(--muted);
+  }
+  .mission-item.done{ color:var(--pitch-dark); }
+  .mission-item .mission-text{ flex:1; }
+  .mission-item .mission-reward{
+    font-family:'Baloo 2';
+    font-weight:700;
+    color:#8a5a00;
+    font-size:11px;
   }
 
   input#teamName{
@@ -254,7 +316,7 @@
   .game-wrap{
     position:relative;
     width:100%;
-    aspect-ratio:400/272;
+    aspect-ratio:400/276;
     border-radius:14px;
     overflow:hidden;
     border:3px solid #fff;
@@ -366,12 +428,14 @@
   .confetti{position:fixed; top:-20px; font-size:20px; animation:fall linear forwards;}
   @keyframes fall{ to{ transform:translateY(110vh) rotate(360deg); opacity:0.9;} }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 <div class="app">
 
   <div class="topbar">
     <div class="headline">גביע ה<span>רחוב</span> ⚽</div>
+    <div class="diamond-counter" id="diamondCounter">💎 0</div>
   </div>
   <div class="subtitle" style="margin-bottom:10px;">בנה קבוצה, שחק בעצמך, נצח ארבעה יריבים והרם את הגביע</div>
 
@@ -406,6 +470,10 @@
   <div class="card hidden" id="screen-bracket">
     <h2 id="bracketTeamName">המסלול לגביע</h2>
     <div class="upgrade-line" id="upgradeLine"></div>
+    <div class="missions-box">
+      <div class="missions-title">📋 משימות היום (מתחלפות כל יום) 💎</div>
+      <div id="missionsList"></div>
+    </div>
     <div class="bracket" id="bracketList"></div>
     <div class="length-toggle" id="lengthToggle">
       <div class="length-btn active" data-len="short">משחק מהיר<span class="sub">45 שניות</span></div>
@@ -419,6 +487,7 @@
     <div class="length-toggle" id="opponentToggle">
       <div class="length-btn active" data-vs="cpu">נגד המחשב<span class="sub">יריב AI</span></div>
       <div class="length-btn" data-vs="friend">נגד חבר<span class="sub">אותו מכשיר</span></div>
+      <div class="length-btn" data-vs="auto">צפייה בלבד<span class="sub">שתי הקבוצות לבד</span></div>
     </div>
     <button class="primary" id="btnPlayMatch">שרוק להתחלת המשחק</button>
     <button class="secondary" id="btnPractice">🎯 משחק אימון (לא נחשב לליגה)</button>
@@ -450,17 +519,20 @@
     <div class="game-wrap" id="gameWrap">
       <canvas id="pitchCanvas"></canvas>
     </div>
-    <div class="controls-bar">
-      <div class="joy-base" id="joyBase"><div class="joy-knob" id="joyKnob"></div></div>
-      <div class="action-cluster">
-        <div class="action-row">
-          <button class="mini-btn" id="tackleBtn">🦵<span>תיקול</span></button>
-          <button class="mini-btn" id="liftBtn">⬆️<span>הרמה</span></button>
+    <div id="gameControls">
+      <div class="controls-bar">
+        <div class="joy-base" id="joyBase"><div class="joy-knob" id="joyKnob"></div></div>
+        <div class="action-cluster">
+          <div class="action-row">
+            <button class="mini-btn" id="tackleBtn">🦵<span>תיקול</span></button>
+            <button class="mini-btn" id="liftBtn">⬆️<span>הרמה</span></button>
+          </div>
+          <button class="shoot-btn" id="shootBtn"><span class="ring"></span>⚽</button>
         </div>
-        <button class="shoot-btn" id="shootBtn"><span class="ring"></span>⚽</button>
       </div>
+      <div class="hint">🕹️ ג'ויסטיק לניוד • החזק את הכדור לבעיטה • תיקול לגניבת כדור • הרמה לחיפוי מעל השוער</div>
     </div>
-    <div class="hint">🕹️ ג'ויסטיק לניוד • החזק את הכדור לבעיטה • תיקול לגניבת כדור • הרמה לחיפוי מעל השוער</div>
+    <div class="hint" id="spectateHint" style="display:none;">👀 מצב צפייה - שתי הקבוצות משוחקות לבד, אתה רק צופה</div>
 
     <div id="resultArea"></div>
     <button class="primary" id="btnContinue" style="display:none;">המשך</button>
@@ -500,6 +572,51 @@ const PLAYERS = [
   {name:"בר עמרם", pos:"קישור", emoji:"🧭", atk:3, def:3, special:"קריאה טקטית"},
   {name:"נועם אלבז", pos:"מגן", emoji:"⛰️", atk:1, def:5, special:"הגנה בלתי מעורערת"},
 ];
+const PREMIUM_IDX = PLAYERS.length;
+PLAYERS.push({name:"אלוף העל", pos:"קישור", emoji:"💎", atk:10, def:10, special:"שחקן אגדי - חסר תחרות", premium:true, diamondCost:1000});
+
+const MISSIONS = [
+  {id:'first_win',    text:'נצח במשחק הראשון שלך',            diff:'easy', reward:5},
+  {id:'tackle_success',text:'בצע תיקול מוצלח',                diff:'easy', reward:5},
+  {id:'corner_win',   text:'זכה בקרן',                        diff:'easy', reward:5},
+  {id:'practice_play',text:'שחק משחק אימון אחד',              diff:'easy', reward:5},
+  {id:'foul_drawn',   text:'גרום ליריב לפאול',                diff:'easy', reward:5},
+  {id:'draw_game',    text:'הגיע להארכה (תיקו בזמן הרגיל)',    diff:'easy', reward:5},
+  {id:'squad11',      text:'שחק משחק במצב 11 נגד 11',          diff:'easy', reward:5},
+  {id:'score_hattrick',text:'כבוש 3 גולים במשחק אחד',         diff:'hard', reward:10},
+  {id:'lift_goal',    text:'כבוש גול מהרמה מעל השוער',        diff:'hard', reward:10},
+  {id:'promote',      text:'עלה לליגה הבאה',                   diff:'hard', reward:10},
+  {id:'win_streak5',  text:'נצח 5 משחקים ברצף',                diff:'hard', reward:10},
+  {id:'clean_sheet',  text:'נצח בלי לספוג גול',                diff:'hard', reward:10},
+];
+
+function seededRng(seed){
+  let h = 0;
+  for(let i=0;i<seed.length;i++){ h = (Math.imul(31,h) + seed.charCodeAt(i)) | 0; }
+  return function(){
+    h = Math.imul(h ^ (h>>>15), h | 1);
+    h ^= h + Math.imul(h ^ (h>>>7), h | 61);
+    return ((h ^ (h>>>14)) >>> 0) / 4294967296;
+  };
+}
+
+let cachedDailyKey = null, cachedDailyMissions = [];
+function getDailyMissions(){
+  const key = new Date().toDateString();
+  if(cachedDailyKey !== key){
+    cachedDailyKey = key;
+    const rng = seededRng(key);
+    const pool = MISSIONS.slice();
+    for(let i=pool.length-1;i>0;i--){
+      const j = Math.floor(rng()*(i+1));
+      [pool[i],pool[j]] = [pool[j],pool[i]];
+    }
+    cachedDailyMissions = pool.slice(0,4);
+  }
+  return cachedDailyMissions;
+}
+
+function missionKey(id){ return `${new Date().toDateString()}::${id}`; }
 
 const LEAGUES = [
   {num:5, leagueName:"ליגת העל",        teamName:"כוכבי הירקון",     emoji:"🌊", atk:2.0, def:1.8, keeperSkill:0.18},
@@ -511,7 +628,28 @@ const LEAGUES = [
 const PRACTICE_OPPONENT = {num:0, leagueName:"אימון", teamName:"קבוצת אימון", emoji:"🎯", atk:2.8, def:2.6, keeperSkill:0.30};
 
 /* ================= app state ================= */
-let state = { teamName:"", selected:[], round:0, matchLength:'short', squadSize:5, funMode:'normal', upgrade:0, vsFriend:false, gameInLeague:0 };
+let state = { teamName:"", selected:[], round:0, matchLength:'short', squadSize:5, funMode:'normal', upgrade:0, vsFriend:false, spectate:false, gameInLeague:0, premiumUnlocked:false, diamonds:0, missionsDone:{}, winStreak:0 };
+
+function completeMission(id){
+  const activeIds = getDailyMissions().map(m=>m.id);
+  if(!activeIds.includes(id)) return;
+  const key = missionKey(id);
+  if(state.missionsDone[key]) return;
+  const m = MISSIONS.find(x=>x.id===id);
+  if(!m) return;
+  state.missionsDone[key] = true;
+  state.diamonds += m.reward;
+  updateDiamondDisplay();
+  showStatus(`🎖️ משימה הושלמה: ${m.text} (+${m.reward}💎)`);
+  if(document.getElementById('screen-bracket') && !document.getElementById('screen-bracket').classList.contains('hidden')){
+    renderMissions();
+  }
+}
+
+function updateDiamondDisplay(){
+  const el = $('diamondCounter');
+  if(el) el.textContent = `💎 ${state.diamonds}`;
+}
 let isPracticeMatch = false;
 function currentOpponent(){ return isPracticeMatch ? PRACTICE_OPPONENT : LEAGUES[state.round]; }
 
@@ -560,7 +698,55 @@ function renderDraft(){
     div.addEventListener('click', ()=>togglePlayer(idx, div));
     grid.appendChild(div);
   });
+  renderPremiumCard();
   updatePickCount();
+}
+
+function renderPremiumCard(){
+  const grid = $('playerGrid');
+  const p = PLAYERS[PREMIUM_IDX];
+  const div = document.createElement('div');
+
+  if(!state.premiumUnlocked){
+    div.className = "player premium locked";
+    div.innerHTML = `
+      <span class="emoji">🔒</span>
+      <div class="name">${p.name}</div>
+      <div class="pos">${p.pos}</div>
+      <div class="special">✨ ${p.special}</div>
+      <div class="stat-row">
+        <span class="stat atk">התקפה ${p.atk}</span>
+        <span class="stat def">הגנה ${p.def}</span>
+      </div>
+      <div class="price-tag">💎 ${p.diamondCost} יהלומים</div>`;
+    div.addEventListener('click', attemptPurchasePremium);
+  } else {
+    div.className = "player premium" + (state.selected.includes(PREMIUM_IDX) ? " selected" : "");
+    div.innerHTML = `
+      <span class="emoji">${p.emoji}</span>
+      <div class="name">${p.name}</div>
+      <div class="pos">${p.pos}</div>
+      <div class="special">✨ ${p.special}</div>
+      <div class="stat-row">
+        <span class="stat atk">התקפה ${p.atk}</span>
+        <span class="stat def">הגנה ${p.def}</span>
+      </div>`;
+    div.addEventListener('click', ()=>togglePlayer(PREMIUM_IDX, div));
+  }
+  grid.appendChild(div);
+}
+
+function attemptPurchasePremium(){
+  const p = PLAYERS[PREMIUM_IDX];
+  if(state.diamonds >= p.diamondCost){
+    state.diamonds -= p.diamondCost;
+    state.premiumUnlocked = true;
+    updateDiamondDisplay();
+    alert(`🎉 פתחת את "${p.name}"! (-${p.diamondCost}💎)`);
+    renderDraft();
+  } else {
+    alert(`צריך ${p.diamondCost}💎 כדי לפתוח את "${p.name}", ויש לך ${state.diamonds}💎.\nהשלם משימות בליגה כדי לצבור עוד יהלומים!`);
+  }
 }
 
 function togglePlayer(idx, el){
@@ -606,8 +792,25 @@ function myPower(){
 }
 
 /* ================= screen 3: bracket ================= */
+function renderMissions(){
+  const list = $('missionsList');
+  if(!list) return;
+  const today = getDailyMissions();
+  list.innerHTML = today.map(m=>{
+    const done = !!state.missionsDone[missionKey(m.id)];
+    const diffTag = m.diff==='hard' ? '🔴' : '🟢';
+    return `<div class="mission-item ${done?'done':''}">
+      <span>${done?'✅':'⬜'}</span>
+      <span class="mission-text">${diffTag} ${m.text}</span>
+      <span class="mission-reward">+${m.reward}💎</span>
+    </div>`;
+  }).join('');
+}
+
 function renderBracket(){
   $('bracketTeamName').textContent = `המסלול של ${state.teamName}`;
+  updateDiamondDisplay();
+  renderMissions();
   $('upgradeLine').textContent = state.upgrade > 0
     ? `⭐ שדרוג קבוצתי: +${state.upgrade} להתקפה ולהגנה`
     : `עברו ליגה כדי לקבל שדרוג קבוע לכל השחקנים`;
@@ -657,8 +860,12 @@ document.querySelectorAll('#opponentToggle .length-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('#opponentToggle .length-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    state.vsFriend = btn.dataset.vs === 'friend';
+    const mode = btn.dataset.vs;
+    state.vsFriend = mode === 'friend';
+    state.spectate = mode === 'auto';
     $('p2controls').classList.toggle('hidden', !state.vsFriend);
+    $('gameControls').classList.toggle('hidden', state.spectate);
+    $('spectateHint').style.display = state.spectate ? 'block' : 'none';
   });
 });
 
@@ -690,27 +897,15 @@ const FRICTION = 0.985;
 const AI_SHOOT_RANGE = 95;
 const MAX_CHARGE_MS = 700;
 const FOUL_CHANCE = 0.08;
-const ZOOM = 2.3;              // how close the camera sits — higher = players look bigger
-const OBLIQUE_SQUISH = 0.78;   // vertical compression, gives the low angled "coach" look instead of a flat drone view
-
 let camera = {x: PW/2, y: PH/2};
 
-function worldToScreen(x, y){
-  const dx = x - camera.x;
-  const dy = (y - camera.y) * OBLIQUE_SQUISH;
-  return { sx: PW/2 + dx*ZOOM, sy: PH/2 + dy*ZOOM };
-}
-
 function updateCamera(){
-  const halfW = Math.min(PW/2, (PW/2)/ZOOM);
-  const halfH = Math.min(PH/2, (PH/2)/(ZOOM*OBLIQUE_SQUISH));
-  camera.x += (ball.x - camera.x) * 0.10;
-  camera.y += (ball.y - camera.y) * 0.10;
-  camera.x = Math.max(halfW, Math.min(PW-halfW, camera.x));
-  camera.y = Math.max(halfH, Math.min(PH-halfH, camera.y));
+  camera.x += (ball.x - camera.x) * 0.08;
+  camera.y += (ball.y - camera.y) * 0.08;
 }
 
-let canvas, ctx;
+let canvas, renderer, scene, camera3d, ambientLight;
+let meshMine = [], meshOpp = [], keeperMineMesh, keeperOppMesh, ballMesh, ringMine, ringOpp;
 let myTeam = [], oppTeam = [], controlled, controlled2, ball;
 let keeperMine, keeperOpp;
 let carrier = null;
@@ -792,10 +987,22 @@ function initEngineOnce(){
   if(engineInit) return;
   engineInit = true;
   canvas = $('pitchCanvas');
-  ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = PW*dpr; canvas.height = CANVAS_H*dpr;
-  ctx.scale(dpr,dpr);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+  renderer.setPixelRatio(dpr);
+  renderer.setSize(PW, CANVAS_H, false);
+  renderer.setClearColor(0x0d2818, 1);
+
+  scene = new THREE.Scene();
+  camera3d = new THREE.PerspectiveCamera(45, PW/CANVAS_H, 1, 2000);
+
+  ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+  scene.add(ambientLight);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.75);
+  dirLight.position.set(60, 200, 100);
+  scene.add(dirLight);
+
+  buildStaticScene();
 
   setupJoystick($('joyBase'), $('joyKnob'), 32, v=>{ joystickVec = v; });
   setupShootButton($('shootBtn'), ()=>carrier, ()=>controlled);
@@ -808,7 +1015,7 @@ function initEngineOnce(){
 }
 
 function attemptTackle(){
-  if(!running || ball.airborne) return;
+  if(!running || ball.airborne || state.spectate) return;
   if(!carrier || carrier.team === 'mine') { return; }
   const dist = Math.hypot(controlled.x-ball.x, controlled.y-ball.y);
   if(dist > CAPTURE_R + 16) return;
@@ -817,6 +1024,7 @@ function attemptTackle(){
     carrier = controlled;
     lastTouchTeam = 'mine';
     showStatus('🦵 תיקול מוצלח!');
+    completeMission('tackle_success');
   } else if(Math.random() < FOUL_CHANCE*1.6){
     showStatus('🚫 פאול על התיקול!');
     foulLockFrames = 25;
@@ -826,7 +1034,7 @@ function attemptTackle(){
 }
 
 function attemptLift(){
-  if(!running) return;
+  if(!running || state.spectate) return;
   if(carrier !== controlled) return;
   const f = controlled.facing || {x:1,y:0};
   doLift(controlled, f);
@@ -842,6 +1050,7 @@ function doLift(entity, dir){
   ball.y += ny*(CAPTURE_R+5);
   carrier = null;
   ball.airborne = true;
+  ball._airStart = performance.now();
   clearTimeout(ball._airTimer);
   ball._airTimer = setTimeout(()=>{ ball.airborne = false; }, 550);
 }
@@ -896,6 +1105,7 @@ function makeEntities(){
   controlled2 = oppTeam.reduce((closest,e)=> (
     Math.hypot(e.x-ball.x,e.y-ball.y) < Math.hypot(closest.x-ball.x,closest.y-ball.y) ? e : closest
   ), oppTeam[0]);
+  rebuildMeshes();
 }
 
 function resetPositions(){
@@ -958,6 +1168,7 @@ function startMatch(){
   clearInterval(timerInterval);
   const opp = currentOpponent();
   const my = myPower();
+  if(state.squadSize===11 && !isPracticeMatch) completeMission('squad11');
 
   speedPlayer = 2.25 + (my.atk-3)*0.15;
   speedAI = 2.0;
@@ -1016,6 +1227,7 @@ function onTimerZero(){
       timeLeft = 20;
       updateTimerDisplay();
       showStatus("⏱️ תיקו! הארכה - הגול הבא מכריע");
+      if(!isPracticeMatch) completeMission('draw_game');
       resetPositions();
       running = true;
       requestAnimationFrame(tick);
@@ -1072,6 +1284,7 @@ function showResult(won, opp){
   btn.style.display = "block";
 
   if(isPracticeMatch){
+    completeMission('practice_play');
     btn.textContent = "חזרה לתפריט";
     btn.onclick = ()=>{
       hide('screen-match');
@@ -1084,6 +1297,10 @@ function showResult(won, opp){
   btn.textContent = won ? "המשך בטורניר" : "החלף קבוצה ונסה שוב";
   btn.onclick = ()=>{
     if(won){
+      completeMission('first_win');
+      if(awayScore===0) completeMission('clean_sheet');
+      state.winStreak = (state.winStreak||0) + 1;
+      if(state.winStreak >= 5) completeMission('win_streak5');
       state.upgrade += 1;
       state.gameInLeague++;
       hide('screen-match');
@@ -1091,6 +1308,7 @@ function showResult(won, opp){
         state.gameInLeague = 0;
         state.upgrade += 2;
         state.round++;
+        completeMission('promote');
         if(state.round >= LEAGUES.length){
           showTrophy();
           return;
@@ -1099,6 +1317,7 @@ function showResult(won, opp){
       renderBracket();
       show('screen-bracket');
     } else {
+      state.winStreak = 0;
       changeTeamAfterLoss();
     }
   };
@@ -1206,6 +1425,10 @@ function onGoal(scoringTeam){
   updateScoreDisplay(true);
   const opp = currentOpponent();
   showStatus(scoringTeam==='mine' ? `⚽ גול לכם! ${homeScore}-${awayScore}` : `⚽ גול ל${opp.teamName}! ${homeScore}-${awayScore}`);
+  if(scoringTeam==='mine' && !isPracticeMatch){
+    if(ball.airborne) completeMission('lift_goal');
+    if(homeScore >= 3) completeMission('score_hattrick');
+  }
   if(mode === 'overtime'){
     setTimeout(()=>{ clearInterval(timerInterval); endMatch(); }, 1300);
   } else {
@@ -1220,17 +1443,25 @@ function onGoal(scoringTeam){
 function tick(){
   if(!running) return;
 
-  updateControlledSwitch();
-  movePlayerFromJoystick(controlled, joystickVec);
-  if(state.vsFriend){
-    updateControlledSwitch2();
-    movePlayerFromJoystick(controlled2, joystickVec2);
+  if(state.spectate){
+    updateKeepers();
+    markChasers(myTeam);
+    markChasers(oppTeam);
+    myTeam.forEach(e=> updateAI(e));
+    oppTeam.forEach(e=> updateAI(e));
+  } else {
+    updateControlledSwitch();
+    movePlayerFromJoystick(controlled, joystickVec);
+    if(state.vsFriend){
+      updateControlledSwitch2();
+      movePlayerFromJoystick(controlled2, joystickVec2);
+    }
+    updateKeepers();
+    markChasers(myTeam);
+    markChasers(oppTeam);
+    myTeam.forEach(e=>{ if(e !== controlled) updateAI(e); });
+    oppTeam.forEach(e=>{ if(!(state.vsFriend && e === controlled2)) updateAI(e); });
   }
-  updateKeepers();
-  markChasers(myTeam);
-  markChasers(oppTeam);
-  myTeam.forEach(e=>{ if(e !== controlled) updateAI(e); });
-  oppTeam.forEach(e=>{ if(!(state.vsFriend && e === controlled2)) updateAI(e); });
 
   if(ball.airborne){
     carrier = null;
@@ -1248,6 +1479,7 @@ function tick(){
     } else if(best && carrier && best.team !== carrier.team && best !== carrier && Math.random() < FOUL_CHANCE){
       const team = carrier.team==='mine' ? state.teamName : currentOpponent().teamName;
       showStatus(`🚫 פאול! ${team} שומרים על הכדור`);
+      if(carrier.team==='mine' && !isPracticeMatch) completeMission('foul_drawn');
       foulLockFrames = 25;
     } else {
       carrier = best;
@@ -1261,7 +1493,7 @@ function tick(){
     ball.y = carrier.y + f.y*DRIBBLE_OFFSET;
     ball.vx = 0; ball.vy = 0;
 
-    const isHuman = carrier===controlled || (state.vsFriend && carrier===controlled2);
+    const isHuman = !state.spectate && (carrier===controlled || (state.vsFriend && carrier===controlled2));
     if(!isHuman){
       const distGoal = carrier.team==='mine' ? (PW-carrier.x) : carrier.x;
       const shootChance = carrier.team==='mine' ? 0.05 : oppShootChance;
@@ -1314,6 +1546,7 @@ function awardCorner(team, side){
   running = false;
   const teamName = team==='mine' ? state.teamName : currentOpponent().teamName;
   showStatus(`🚩 קרן ל${teamName}!`);
+  if(team==='mine' && !isPracticeMatch) completeMission('corner_win');
   setTimeout(()=>{
     const cornerY = Math.random()<0.5 ? goalTop-6 : goalBottom+6;
     ball.y = Math.max(6, Math.min(PH-6, cornerY));
@@ -1341,213 +1574,220 @@ function awardGoalKick(team, side){
 }
 
 /* ---- rendering ---- */
-function drawCrowd(yStart, height){
-  ctx.fillStyle = '#0d2818';
-  ctx.fillRect(0, yStart, PW, height);
-  const cols = 44;
-  for(let i=0;i<cols;i++){
-    const x = (i+0.5)*(PW/cols);
-    const isHome = x < PW/2;
-    ctx.fillStyle = isHome ? '#ffc93c' : '#e6484f';
-    const jitter = (i%2===0) ? 0 : 3;
-    ctx.beginPath(); ctx.arc(x, yStart+height*0.32+jitter, 2.1, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x, yStart+height*0.72-jitter, 2.1, 0, Math.PI*2); ctx.fill();
+/* ---- 3D rendering (Three.js) ---- */
+function makeLimb(color, length, radius){
+  const holder = new THREE.Group();
+  const geo = new THREE.CylinderGeometry(radius, radius, length, 8);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color}));
+  mesh.position.y = -length/2;
+  holder.add(mesh);
+  return holder;
+}
+
+function createPlayerMesh(bodyColor, shortsColor){
+  const g = new THREE.Group();
+
+  const legL = makeLimb(shortsColor, 3, 0.55); legL.position.set(-0.9, 3, 0);
+  const legR = makeLimb(shortsColor, 3, 0.55); legR.position.set(0.9, 3, 0);
+  g.add(legL, legR);
+
+  const shorts = new THREE.Mesh(new THREE.BoxGeometry(3.2,1,2.2), new THREE.MeshStandardMaterial({color:shortsColor}));
+  shorts.position.y = 3.5;
+  g.add(shorts);
+
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(3.2,3,2.2), new THREE.MeshStandardMaterial({color:bodyColor}));
+  torso.position.y = 5.5;
+  g.add(torso);
+
+  const armL = makeLimb(bodyColor, 2.6, 0.45); armL.position.set(-2, 6.7, 0);
+  const armR = makeLimb(bodyColor, 2.6, 0.45); armR.position.set(2, 6.7, 0);
+  g.add(armL, armR);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 12), new THREE.MeshStandardMaterial({color:0xffe0b2}));
+  head.position.y = 8.1;
+  g.add(head);
+
+  g.userData = {legL, legR, armL, armR};
+  return g;
+}
+
+function createGoalFrame(isLeft){
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({color:0xffffff});
+  const postGeo = new THREE.CylinderGeometry(0.6, 0.6, 9, 8);
+  const postL = new THREE.Mesh(postGeo, mat);
+  const postR = new THREE.Mesh(postGeo, mat);
+  const barGeo = new THREE.CylinderGeometry(0.6, 0.6, GOAL_HALF*2, 8);
+  const bar = new THREE.Mesh(barGeo, mat);
+  bar.rotation.z = Math.PI/2;
+
+  const xPos = isLeft ? -PW/2 : PW/2;
+  postL.position.set(xPos, 4.5, -GOAL_HALF);
+  postR.position.set(xPos, 4.5, GOAL_HALF);
+  bar.position.set(xPos, 9, 0);
+  group.add(postL, postR, bar);
+  return group;
+}
+
+function buildStands(){
+  const group = new THREE.Group();
+  const cols = 26;
+  [-(PH/2+13), (PH/2+13)].forEach(z=>{
+    for(let i=0;i<cols;i++){
+      const x = -PW/2 + (i+0.5)*(PW/cols);
+      const isHome = x < 0;
+      const mat = new THREE.MeshStandardMaterial({color: isHome ? 0xffc93c : 0xe6484f});
+      const box = new THREE.Mesh(new THREE.BoxGeometry((PW/cols)*0.85, 6, 7), mat);
+      box.position.set(x, 3, z);
+      group.add(box);
+    }
+  });
+  scene.add(group);
+}
+
+function buildStaticScene(){
+  const texCanvas = document.createElement('canvas');
+  texCanvas.width = 512;
+  texCanvas.height = Math.round(512*(PH/PW));
+  const tctx = texCanvas.getContext('2d');
+  const stripes = 14;
+  const stripeW = texCanvas.width/stripes;
+  for(let i=0;i<stripes;i++){
+    tctx.fillStyle = i%2===0 ? '#2fa968' : '#279b5c';
+    tctx.fillRect(i*stripeW, 0, stripeW+1, texCanvas.height);
+  }
+  const scaleTex = texCanvas.width/PW;
+  tctx.strokeStyle = 'rgba(255,255,255,.85)';
+  tctx.lineWidth = 3;
+  tctx.beginPath();
+  tctx.moveTo(texCanvas.width/2, 0);
+  tctx.lineTo(texCanvas.width/2, texCanvas.height);
+  tctx.stroke();
+  tctx.beginPath();
+  tctx.arc(texCanvas.width/2, texCanvas.height/2, 26*scaleTex, 0, Math.PI*2);
+  tctx.stroke();
+  const gt = goalTop*scaleTex, gb = goalBottom*scaleTex, gw = 34*scaleTex;
+  tctx.strokeRect(0, gt, gw, gb-gt);
+  tctx.strokeRect(texCanvas.width-gw, gt, gw, gb-gt);
+  tctx.strokeRect(2, 2, texCanvas.width-4, texCanvas.height-4);
+
+  const texture = new THREE.CanvasTexture(texCanvas);
+  const pitchMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(PW, PH),
+    new THREE.MeshStandardMaterial({map:texture})
+  );
+  pitchMesh.rotation.x = -Math.PI/2;
+  scene.add(pitchMesh);
+
+  buildStands();
+  scene.add(createGoalFrame(true));
+  scene.add(createGoalFrame(false));
+}
+
+function rebuildMeshes(){
+  meshMine.forEach(m=>scene.remove(m));
+  meshOpp.forEach(m=>scene.remove(m));
+  meshMine = myTeam.map(()=> createPlayerMesh(0xffc93c, 0x134d2e));
+  meshOpp = oppTeam.map(()=> createPlayerMesh(0xffffff, 0xe6484f));
+  meshMine.forEach(m=>scene.add(m));
+  meshOpp.forEach(m=>scene.add(m));
+
+  if(!keeperMineMesh){
+    keeperMineMesh = createPlayerMesh(0x39d353, 0x0f5c28);
+    keeperOppMesh = createPlayerMesh(0xf5a623, 0x7a4a00);
+    scene.add(keeperMineMesh, keeperOppMesh);
+  }
+  if(!ballMesh){
+    ballMesh = new THREE.Mesh(new THREE.SphereGeometry(2.6, 14, 14), new THREE.MeshStandardMaterial({color:0xffffff}));
+    scene.add(ballMesh);
+  }
+  if(!ringMine){
+    ringMine = new THREE.Mesh(new THREE.RingGeometry(7,9,24), new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide}));
+    ringMine.rotation.x = -Math.PI/2;
+    scene.add(ringMine);
+    ringOpp = new THREE.Mesh(new THREE.RingGeometry(7,9,24), new THREE.MeshBasicMaterial({color:0xff5555, side:THREE.DoubleSide}));
+    ringOpp.rotation.x = -Math.PI/2;
+    scene.add(ringOpp);
   }
 }
 
-function drawGoal(isLeft){
-  const w = 34;
-  const gx = isLeft ? 0 : PW-w;
-  const p1 = worldToScreen(gx, goalTop);
-  const p2 = worldToScreen(gx+w, goalBottom);
-  const rx = p1.sx, ry = p1.sy, rw = p2.sx-p1.sx, rh = p2.sy-p1.sy;
+function updateEntityMesh(mesh, e){
+  const speedMag = Math.hypot(e.vx||0, e.vy||0);
+  e.animPhase = (e.animPhase||0) + speedMag*0.5 + 0.03;
+  const swing = Math.sin(e.animPhase) * Math.min(0.9, 0.3 + speedMag*0.35);
 
-  ctx.strokeStyle = 'rgba(255,255,255,.45)';
-  ctx.lineWidth = 1;
-  for(let i=1;i<5;i++){
-    const nx = rx + (rw/5)*i;
-    ctx.beginPath(); ctx.moveTo(nx, ry); ctx.lineTo(nx, ry+rh); ctx.stroke();
+  let bob = 0;
+  if(state.funMode === 'bounce'){
+    bob = Math.max(0, Math.sin(e.animPhase)) * 6 * (0.4 + Math.min(1, speedMag*0.6));
   }
-  for(let j=1;j<4;j++){
-    const ny = ry + (rh/4)*j;
-    ctx.beginPath(); ctx.moveTo(rx, ny); ctx.lineTo(rx+rw, ny); ctx.stroke();
+
+  mesh.position.set(e.x-PW/2, bob, e.y-PH/2);
+  const f = e.facing || {x:1,y:0};
+  mesh.rotation.y = Math.atan2(f.x, f.y);
+
+  const ud = mesh.userData;
+  if(ud){
+    ud.legL.rotation.x = swing;
+    ud.legR.rotation.x = -swing;
+    ud.armL.rotation.x = -swing*0.7;
+    ud.armR.rotation.x = swing*0.7;
   }
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 2.5;
-  ctx.strokeRect(rx, ry, rw, rh);
 }
 
-function applyGlitch(){
-  const bands = 3 + Math.floor(Math.random()*3);
-  for(let i=0;i<bands;i++){
-    const by = Math.random()*CANVAS_H;
-    const bh = 4 + Math.random()*12;
-    const shift = (Math.random()-0.5) * 30;
-    ctx.drawImage(canvas, 0, by*(canvas.height/CANVAS_H), canvas.width, bh*(canvas.height/CANVAS_H),
-                  shift, by, PW, bh);
-  }
-  ctx.globalAlpha = 0.14;
-  ctx.fillStyle = Math.random()<0.5 ? '#ff00c8' : '#00e5ff';
-  ctx.fillRect(0,0,PW,CANVAS_H);
-  ctx.globalAlpha = 1;
+function updateCameraPosition(){
+  const camX = camera.x - PW/2;
+  const camZ = camera.y - PH/2;
+  camera3d.position.set(camX, 55, camZ + 50);
+  camera3d.lookAt(camX, 3, camZ);
+}
+
+function applyGlitch3D(){
+  camera3d.position.x += (Math.random()-0.5)*6;
+  camera3d.position.y += (Math.random()-0.5)*4;
+  ambientLight.color.setHex(Math.random()<0.5 ? 0xff00c8 : 0x00e5ff);
 }
 
 function render(){
   updateCamera();
+  updateCameraPosition();
 
-  ctx.clearRect(0,0,PW,CANVAS_H);
-  drawCrowd(0, STAND_H);
-  drawCrowd(PH+STAND_H, STAND_H);
+  myTeam.forEach((e,i)=> meshMine[i] && updateEntityMesh(meshMine[i], e));
+  oppTeam.forEach((e,i)=> meshOpp[i] && updateEntityMesh(meshOpp[i], e));
+  updateEntityMesh(keeperMineMesh, keeperMine);
+  updateEntityMesh(keeperOppMesh, keeperOpp);
 
-  ctx.save();
-  ctx.translate(0, STAND_H);
-
-  // grass stripes, panned/zoomed with the camera
-  const stripeW = 28;
-  for(let x=0, i=0; x<PW; x+=stripeW, i++){
-    const x2 = Math.min(x+stripeW, PW);
-    const s1 = worldToScreen(x, camera.y).sx;
-    const s2 = worldToScreen(x2, camera.y).sx;
-    ctx.fillStyle = i%2===0 ? '#2fa968' : '#279b5c';
-    ctx.fillRect(s1, -20, s2-s1, PH+40);
+  ringMine.visible = !state.spectate;
+  if(!state.spectate){
+    ringMine.position.set(controlled.x-PW/2, 0.2, controlled.y-PH/2);
+  }
+  if(state.vsFriend){
+    ringOpp.position.set(controlled2.x-PW/2, 0.2, controlled2.y-PH/2);
+    ringOpp.visible = true;
+  } else {
+    ringOpp.visible = false;
   }
 
-  ctx.strokeStyle = 'rgba(255,255,255,.8)';
-  ctx.lineWidth = 2;
-  const clTop = worldToScreen(PW/2, 0), clBot = worldToScreen(PW/2, PH);
-  ctx.beginPath(); ctx.moveTo(clTop.sx, clTop.sy); ctx.lineTo(clBot.sx, clBot.sy); ctx.stroke();
-
-  const cc = worldToScreen(PW/2, PH/2);
-  ctx.beginPath();
-  ctx.ellipse(cc.sx, cc.sy, 26*ZOOM, 26*ZOOM*OBLIQUE_SQUISH, 0, 0, Math.PI*2);
-  ctx.stroke();
-
-  drawGoal(true);
-  drawGoal(false);
-
-  const withDepth = arr => arr.slice().sort((a,b)=>a.y-b.y);
-  withDepth(oppTeam).forEach(e=> drawEntity(e, '#ffffff', '#e6484f', e.emoji, state.vsFriend && e===controlled2));
-  withDepth(myTeam).forEach(e=> drawEntity(e, '#ffc93c', '#134d2e', e.emoji, e===controlled));
-  drawEntity(keeperMine, '#39d353', '#0f5c28', '🧤', false);
-  drawEntity(keeperOpp, '#f5a623', '#7a4a00', '🧤', false);
-
-  const bp = worldToScreen(ball.x, ball.y);
-  ctx.beginPath();
-  ctx.arc(bp.sx, bp.sy, 7*ZOOM*0.6, 0, Math.PI*2);
-  ctx.fillStyle = '#fff';
-  ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#1b2a1e';
-  ctx.stroke();
-
-  ctx.restore();
+  let ballHeight = 1.5;
+  if(ball.airborne && ball._airStart){
+    const progress = Math.min(1, (performance.now()-ball._airStart)/550);
+    ballHeight = 1.5 + Math.sin(progress*Math.PI)*20;
+  }
+  ballMesh.position.set(ball.x-PW/2, ballHeight, ball.y-PH/2);
 
   if(state.funMode === 'glitch'){
-    if(glitchBurstFrames > 0){ applyGlitch(); glitchBurstFrames--; }
-    else {
+    if(glitchBurstFrames > 0){
+      applyGlitch3D();
+      glitchBurstFrames--;
+      if(glitchBurstFrames === 0) ambientLight.color.setHex(0xffffff);
+    } else {
       glitchNextIn--;
       if(glitchNextIn <= 0){ glitchBurstFrames = 5+Math.floor(Math.random()*6); glitchNextIn = 80+Math.random()*140; }
     }
+  } else {
+    ambientLight.color.setHex(0xffffff);
   }
-}
 
-function roundRect(c,x,y,w,h,r){
-  c.moveTo(x+r,y);
-  c.arcTo(x+w,y,x+w,y+h,r);
-  c.arcTo(x+w,y+h,x,y+h,r);
-  c.arcTo(x,y+h,x,y,r);
-  c.arcTo(x,y,x+w,y,r);
-  c.closePath();
-}
-
-function drawEntity(e, fill, ringColor, emoji, isControlled){
-  const {sx, sy} = worldToScreen(e.x, e.y);
-  const s = ZOOM * 0.6;
-
-  const speedMag = Math.hypot(e.vx||0, e.vy||0);
-  e.animPhase = (e.animPhase||0) + speedMag*0.55 + 0.03;
-  const swing = Math.sin(e.animPhase) * Math.min(7, 3.5 + speedMag*2.2) * s;
-
-  let bob = 0;
-  if(state.funMode === 'bounce'){
-    bob = Math.max(0, Math.sin(e.animPhase)) * 20 * s * (0.35 + Math.min(1, speedMag*0.6));
-    if(bob > 1.5){
-      const shadowShrink = 1 - Math.min(0.55, bob/40);
-      ctx.beginPath();
-      ctx.ellipse(sx, sy+9*s, 9*s*shadowShrink, 3*s*shadowShrink, 0, 0, Math.PI*2);
-      ctx.fillStyle = 'rgba(0,0,0,.28)';
-      ctx.fill();
-    }
-  }
-  const px = sx, py = sy - bob;
-
-  const hipX = px, hipY = py+6*s;
-  const shoulderY = py-6*s;
-  const headY = py-14*s;
-
-  ctx.lineCap = 'round';
-
-  ctx.strokeStyle = ringColor;
-  ctx.lineWidth = 3*s;
-  ctx.beginPath();
-  ctx.moveTo(hipX-2*s, hipY);
-  ctx.lineTo(hipX-2*s-swing*0.6, hipY+9*s);
-  ctx.stroke();
-
-  ctx.lineWidth = 2.3*s;
-  ctx.beginPath();
-  ctx.moveTo(hipX-5*s, shoulderY);
-  ctx.lineTo(hipX-5*s+swing*0.45, shoulderY+7*s);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(hipX+5*s, shoulderY);
-  ctx.lineTo(hipX+5*s-swing*0.45, shoulderY+7*s);
-  ctx.stroke();
-
-  ctx.lineWidth = 3*s;
-  ctx.beginPath();
-  ctx.moveTo(hipX+2*s, hipY);
-  ctx.lineTo(hipX+2*s+swing*0.6, hipY+9*s);
-  ctx.stroke();
-
-  ctx.beginPath();
-  roundRect(ctx, hipX-6*s, shoulderY, 12*s, 13*s, 4*s);
-  ctx.fillStyle = fill;
-  ctx.fill();
-  ctx.lineWidth = (isControlled ? 2.5 : 1.5) * s;
-  ctx.strokeStyle = isControlled ? '#fff' : ringColor;
-  ctx.stroke();
-
-  ctx.fillStyle = ringColor;
-  ctx.fillRect(hipX-6*s, hipY-4*s, 12*s, 5*s);
-
-  ctx.beginPath();
-  ctx.arc(px, headY, 6*s, 0, Math.PI*2);
-  ctx.fillStyle = '#ffe0b2';
-  ctx.fill();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(0,0,0,.15)';
-  ctx.stroke();
-
-  ctx.font = `${Math.max(6,9*s)}px sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(emoji, px, headY);
-
-  if(isControlled){
-    ctx.beginPath();
-    ctx.arc(px, py-1*s, 21*s, 0, Math.PI*2);
-    ctx.strokeStyle = 'rgba(255,255,255,.75)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(px, headY-15*s);
-    ctx.lineTo(px-5*s, headY-9*s);
-    ctx.lineTo(px+5*s, headY-9*s);
-    ctx.closePath();
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-  }
+  renderer.render(scene, camera3d);
 }
 
 /* ================= screen 5: trophy ================= */
@@ -1578,13 +1818,16 @@ function resetGame(){
   running = false;
   clearInterval(timerInterval);
   isPracticeMatch = false;
-  state = {teamName:"", selected:[], round:0, matchLength:'short', squadSize:5, funMode:'normal', upgrade:0, vsFriend:false, gameInLeague:0};
+  state = {teamName:"", selected:[], round:0, matchLength:'short', squadSize:5, funMode:'normal', upgrade:0, vsFriend:false, spectate:false, gameInLeague:0, premiumUnlocked:false, diamonds:0, missionsDone:{}, winStreak:0};
+  updateDiamondDisplay();
   $('teamName').value = "";
   document.querySelectorAll('#squadToggle .length-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector('#squadToggle .length-btn[data-size="5"]').classList.add('active');
   document.querySelectorAll('#opponentToggle .length-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector('#opponentToggle .length-btn[data-vs="cpu"]').classList.add('active');
   $('p2controls')?.classList.add('hidden');
+  $('gameControls')?.classList.remove('hidden');
+  $('spectateHint').style.display = 'none';
   hide('screen-match');
   hide('screen-trophy');
   hide('screen-bracket');
