@@ -93,6 +93,17 @@
     color:#a9c9b6;
     margin-top:1px;
   }
+  .freekick-choice{
+    display:flex;
+    gap:8px;
+    margin:4px 0 2px;
+  }
+  .freekick-choice button{ flex:1; padding:10px; font-size:13px; }
+  .version-tag{
+    font-size:10px;
+    color:#7fa08c;
+    margin-top:2px;
+  }
   .diamond-counter{
     font-family:'Baloo 2', sans-serif;
     font-weight:800;
@@ -213,6 +224,31 @@
   }
   .player.premium.selected{ border-color:var(--gold-deep); }
   .player.premium.locked{ filter:saturate(.9); }
+  .player.shop-tier-common{ border-color:#9db89e; background:#f3f8f3; }
+  .player.shop-tier-uncommon{ border-color:var(--blue); background:linear-gradient(160deg,#eef4ff,#dbe8ff); }
+  .player.shop-tier-rare{ border-color:#9b3fd6; background:linear-gradient(160deg,#f6ecff,#ecd6ff); }
+  .player.shop-tier-legendary{ border-color:var(--gold-deep); background:linear-gradient(160deg,#fff6da,#ffe083); box-shadow:0 0 0 3px rgba(255,201,60,.3); }
+  .player.shop-tier-common.selected, .player.shop-tier-uncommon.selected,
+  .player.shop-tier-rare.selected, .player.shop-tier-legendary.selected{ box-shadow:0 0 0 3px rgba(0,0,0,.12); }
+  .player.injured{
+    opacity:0.55;
+    filter:grayscale(0.6);
+    cursor:not-allowed;
+  }
+  .player.injured .special{ background:#ffe0e0; color:#a33; }
+  .sell-btn{
+    display:block;
+    width:100%;
+    margin-top:6px;
+    padding:4px 6px;
+    border:none;
+    border-radius:8px;
+    background:#fff3d6;
+    color:#8a5a00;
+    font-size:10.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
   .price-tag{
     font-family:'Baloo 2', sans-serif;
     font-weight:800;
@@ -224,6 +260,73 @@
     display:inline-block;
     margin-top:6px;
   }
+  .shop-modal{
+    position:fixed; inset:0;
+    background:rgba(10,25,18,.7);
+    z-index:900;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+  }
+  .shop-card{
+    background:var(--card);
+    border-radius:var(--r-lg, 20px);
+    padding:18px;
+    max-width:420px;
+    width:100%;
+    max-height:85vh;
+    overflow-y:auto;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);
+  }
+  .shop-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .shop-close{
+    border:none; background:var(--line);
+    width:30px; height:30px; border-radius:50%;
+    font-size:15px; cursor:pointer;
+  }
+  .shop-pack{
+    border:2px solid var(--line);
+    border-radius:16px;
+    padding:14px;
+    text-align:center;
+  }
+  .shop-pack-title{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:15px;
+    margin-bottom:8px;
+  }
+  .shop-odds{
+    font-size:12px;
+    color:var(--muted);
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    margin-bottom:8px;
+  }
+  .shop-note{
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+  .shop-result-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 8px;
+    border-radius:10px;
+    margin-top:6px;
+    font-size:13px;
+    background:#f5f9f4;
+  }
+  .shop-result-item .rname{ flex:1; font-weight:700; font-family:'Baloo 2', sans-serif; }
+  .shop-result-item.selected-pick{ background:#dff5e0; box-shadow:0 0 0 2px var(--pitch); }
   .stat-row{ display:flex; justify-content:center; gap:6px; font-size:11px; }
   .stat{ padding:3px 8px; border-radius:99px; font-weight:700; }
   .stat.atk{ background:#ffe6d5; color:#b4460a; }
@@ -622,6 +725,9 @@
     font-weight:700;
   }
   .mini-btn:active{ transform:translateY(3px); box-shadow:none; background:#e9f7ee; }
+  .mini-btn b{ font-weight:normal; }
+  .mini-btn.dim{ opacity:.45; }
+  #actionBtn.pass{ border-color:var(--gold-deep); }
 
   .p2-bar{
     display:flex;
@@ -684,8 +790,10 @@
   .match-layout{ display:flex; flex-direction:column; }
   .match-pitch-col{ flex:1; min-width:0; }
 
-  /* ---------- fullscreen landscape match ---------- */
-  @media (orientation:landscape) and (max-height:600px){
+  /* ---------- fullscreen landscape match ----------
+     three columns: joystick | pitch (+ slim scoreboard) | action buttons
+     nothing floats over the pitch, so the whole field stays visible */
+  @media (orientation:landscape) and (max-height:720px){
     body{ padding:0; }
     .app{ max-width:100%; }
     .topbar, .rail{ display:none; }
@@ -694,70 +802,93 @@
       margin:0; border-radius:0; border:none; box-shadow:none;
       padding:0;
       z-index:50;
-      background:#000;
+      background:#050d09;
       overflow:hidden;
     }
-    .match-layout{ position:relative; width:100%; height:100%; }
-    .match-pitch-col{ position:absolute; inset:0; }
-    #screen-match .game-wrap{
+    .match-layout{
       position:absolute; inset:0;
-      width:100%; height:100%;
+      display:flex; flex-direction:row; align-items:stretch;
+      direction:ltr;
+    }
+    .match-pitch-col{
+      order:1; flex:1; min-width:0; min-height:0;
+      display:flex; flex-direction:column;
+      direction:rtl;
+    }
+    #screen-match .game-wrap{
+      position:relative;
+      flex:1; width:100%; height:auto; min-height:0;
       aspect-ratio:auto;
       border:none; border-radius:0; box-shadow:none;
     }
 
+    /* slim scoreboard strip above the pitch */
     .hud-overlay{
-      position:absolute;
-      top:0; left:0; right:0;
+      position:relative;
+      flex-shrink:0;
       z-index:10;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:3px;
-      margin:0;
-      padding:7px 8px 16px;
-      background:linear-gradient(rgba(0,0,0,.55), transparent);
+      display:flex; flex-direction:column; align-items:center;
+      gap:0; margin:0; padding:3px 8px;
+      background:#0a1510;
       pointer-events:none;
     }
-    .hud-overlay #roundLabel{ color:#cfe3d5; font-size:10px; }
-    .hud-overlay .scorebar{ max-width:460px; box-shadow:0 4px 14px rgba(0,0,0,.45); }
-    .hud-overlay .match-status{ color:#ffe89c; font-size:12.5px; text-shadow:0 1px 3px rgba(0,0,0,.7); }
+    .hud-overlay #roundLabel{ display:none; }
+    .hud-overlay .scorebar{ max-width:420px; box-shadow:none; }
+    .hud-overlay .sb-team{ padding:4px 8px; }
+    .hud-overlay .score{ font-size:19px; min-width:60px; }
+
+    /* status text: small pill, only while there is a message */
+    .hud-overlay .match-status{
+      position:absolute; top:100%; left:50%; transform:translateX(-50%);
+      margin-top:4px; z-index:25;
+      min-height:0; max-width:88%;
+      padding:3px 12px; border-radius:99px;
+      background:rgba(0,0,0,.66);
+      color:#ffe89c; font-size:12px; text-shadow:none;
+      pointer-events:none;
+    }
+    .hud-overlay .match-status:empty{ display:none; }
+
+    /* free-kick / corner choice: centred while the match is paused */
+    .freekick-choice{
+      position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+      z-index:60; width:min(420px,80vw);
+      pointer-events:auto;
+    }
 
     .p2-bar{
-      position:absolute; top:6px; left:6px;
+      position:absolute; top:4px; left:4px;
       z-index:11; margin:0;
       background:rgba(253,236,237,.92);
     }
 
-    .match-controls-col{
-      position:absolute; inset:0;
-      z-index:20;
-      pointer-events:none;
-      display:block;
-      width:auto;
-    }
-    #gameControls{ width:100%; height:100%; position:relative; }
-    #gameControls .controls-bar{
-      position:absolute;
-      bottom:12px; left:14px; right:14px;
-      display:flex;
-      flex-direction:row;
-      justify-content:space-between;
-      align-items:flex-end;
-      margin:0;
-      padding:0;
-    }
-    #gameControls .joy-base, #gameControls .shoot-btn, #gameControls .mini-btn{
-      pointer-events:auto;
-      opacity:.9;
-    }
-    #gameControls .joy-base{ background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.9), rgba(210,232,218,.75)); }
+    /* controls live in side columns instead of over the pitch */
+    .match-controls-col, #gameControls, #gameControls .controls-bar{ display:contents; }
     #gameControls .hint{ display:none; }
+    #gameControls .joy-base{
+      order:0; align-self:center; margin:0 14px; flex-shrink:0;
+      background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.92), rgba(210,232,218,.8));
+    }
+    #gameControls .action-cluster{
+      order:2; align-self:center; margin:0 14px; flex-shrink:0;
+    }
+    #gameControls .action-row{
+      display:grid; grid-template-columns:repeat(2,auto); gap:6px;
+    }
+    #gameControls .mini-btn{ width:46px; height:46px; font-size:17px; }
+    #gameControls .shoot-btn{ width:64px; height:64px; font-size:24px; }
     #spectateHint{
-      position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+      position:absolute; bottom:6px; left:50%; transform:translateX(-50%);
       z-index:11; width:auto; white-space:nowrap;
       background:rgba(0,0,0,.62); color:#fff; margin:0;
-      padding:6px 12px; border-radius:99px;
+      padding:5px 12px; border-radius:99px;
+      pointer-events:none;
+    }
+
+    /* end-of-match banner + continue button float at the bottom only when shown */
+    .result-dock{
+      position:fixed; left:50%; bottom:12px; transform:translateX(-50%);
+      z-index:70; width:min(460px,90vw);
     }
   }
 
@@ -802,6 +933,7 @@
     <div class="titles">
       <div class="headline">גביע ה<span>רחוב</span></div>
       <div class="tagline">בנה קבוצה • שחק בעצמך • הרם את הגביע</div>
+      <div class="version-tag">v1.0</div>
     </div>
     <div class="diamond-counter" id="diamondCounter" aria-label="יהלומים">💎 0</div>
   </header>
@@ -846,13 +978,11 @@
       <div class="missions-title">📋 משימות היום (מתחלפות כל יום) 💎</div>
       <div id="missionsList"></div>
     </div>
+    <button class="secondary" id="btnOpenShop">🛍️ חנות יהלומים</button>
     <div class="section-label">🏆 שלבי הטורניר</div>
     <div class="bracket" id="bracketList"></div>
     <div class="section-label">⏱️ אורך המשחק</div>
-    <div class="length-toggle" id="lengthToggle">
-      <div class="length-btn active" data-len="short">משחק מהיר<span class="sub">45 שניות</span></div>
-      <div class="length-btn" data-len="long">משחק ארוך<span class="sub">5 דקות</span></div>
-    </div>
+    <div class="shop-note" style="text-align:center;">משחק מלא: 2 מחציות של 2:30 דקות, עם הפסקת מחצית</div>
     <div class="section-label">🎲 מצב משחק</div>
     <div class="length-toggle" id="funToggle">
       <div class="length-btn active" data-mode="normal">רגיל<span class="sub">משחק סטנדרטי</span></div>
@@ -889,6 +1019,10 @@
             </div>
           </div>
           <div class="match-status" id="matchStatus" aria-live="polite"></div>
+          <div class="freekick-choice hidden" id="freekickChoice">
+            <button class="primary" id="btnFkShoot">⚽ בעיטה לשער</button>
+            <button class="primary gold" id="btnFkPass">🎯 מסירה</button>
+          </div>
         </div>
 
         <div class="p2-bar hidden" id="p2controls">
@@ -907,20 +1041,23 @@
             <div class="joy-base" id="joyBase" role="application" aria-label="ג'ויסטיק תנועה"><div class="joy-knob" id="joyKnob"></div></div>
             <div class="action-cluster">
               <div class="action-row">
-                <button class="mini-btn" id="tackleBtn" aria-label="תיקול">🦵<span>תיקול</span></button>
                 <button class="mini-btn" id="liftBtn" aria-label="הרמה">⬆️<span>הרמה</span></button>
+                <button class="mini-btn" id="actionBtn" aria-label="תיקול"><b id="actionIcon">🦵</b><span id="actionLabel">תיקול</span></button>
+                <button class="mini-btn" id="subBtn" aria-label="חילוף">🔄<span id="subCount">0</span></button>
               </div>
               <button class="shoot-btn" id="shootBtn" aria-label="בעיטה - החזק כדי לצבור כוח"><span class="ring"></span>⚽</button>
             </div>
           </div>
-          <div class="hint">🕹️ ג'ויסטיק לתנועה • <strong>החזק</strong> את כפתור הבעיטה כדי לבעוט חזק<br>🦵 תיקול לגניבת כדור • ⬆️ הרמה מעל השוער</div>
+          <div class="hint">🕹️ ג'ויסטיק לתנועה • <strong>החזק</strong> את כפתור הבעיטה כדי לבעוט חזק (גם נגיחה כשהכדור באוויר!)<br>🎯 מסירה כשהכדור אצלך / 🦵 תיקול כשהוא אצל היריב (אותו כפתור) • ⬆️ הרמה מעל השוער • 🔄 חילוף<br>🤏 צביטה על המגרש לזום</div>
         </div>
         <div class="hint" id="spectateHint" style="display:none;">👀 מצב צפייה - שתי הקבוצות משוחקות לבד, אתה רק צופה</div>
       </div>
     </div>
 
-    <div id="resultArea"></div>
-    <button class="primary" id="btnContinue" style="display:none;">המשך</button>
+    <div class="result-dock">
+      <div id="resultArea"></div>
+      <button class="primary" id="btnContinue" style="display:none;">המשך</button>
+    </div>
   </div>
 
   <!-- SCREEN 5: trophy -->
@@ -931,6 +1068,39 @@
     <button class="primary" id="btnRestartWin">התחל טורניר חדש</button>
   </div>
 
+</div>
+
+<div class="shop-modal hidden" id="shopModal">
+  <div class="shop-card">
+    <div class="shop-header">
+      <div class="headline">🛍️ חנות היהלומים</div>
+      <button class="shop-close" id="btnCloseShop">✕</button>
+    </div>
+    <div class="shop-pack">
+      <div class="shop-pack-title">📦 מארז שחקנים (5 קלפים)</div>
+      <div class="shop-note" id="collectionCount"></div>
+      <div class="shop-odds">
+        <div>🟢 רגיל (1/1) - 50%</div>
+        <div>🔵 לא שכיח (3/3) - 24.5%</div>
+        <div>🟣 נדיר (5/5) - 25%</div>
+        <div>🟡 אגדי (8/8) - 0.5%</div>
+      </div>
+      <div class="shop-note">כפילויות הופכות אוטומטית ל-2💎 החזר</div>
+      <button class="primary gold" id="btnBuyPack">פתח מארז - 40💎</button>
+    </div>
+    <div id="shopResults"></div>
+  </div>
+</div>
+
+<div class="shop-modal hidden" id="subModal">
+  <div class="shop-card">
+    <div class="shop-header">
+      <div class="headline">🔄 חילוף שחקנים</div>
+      <button class="shop-close" id="btnCloseSub">✕</button>
+    </div>
+    <div id="subInfo" class="shop-note"></div>
+    <div id="subBenchList"></div>
+  </div>
 </div>
 
 <script>
@@ -959,6 +1129,28 @@ const PLAYERS = [
 ];
 const PREMIUM_IDX = PLAYERS.length;
 PLAYERS.push({name:"אלוף העל", pos:"קישור", emoji:"💎", atk:10, def:10, special:"שחקן אגדי - חסר תחרות", premium:true, diamondCost:1000});
+
+const SHOP_PLAYERS = [
+  {name:"השוליה", pos:"קישור", emoji:"🌱", atk:1, def:1, special:"נקודת התחלה", tier:'common',    chance:0.50},
+  {name:"הלוחם",  pos:"קישור", emoji:"⚔️", atk:3, def:3, special:"איזון קרבי",   tier:'uncommon',  chance:0.245},
+  {name:"הזוכה",  pos:"חלוץ",  emoji:"🏅", atk:5, def:5, special:"כוכב המארז",   tier:'rare',      chance:0.25},
+  {name:"האגדה",  pos:"קישור", emoji:"👑", atk:8, def:8, special:"אגדה חיה",     tier:'legendary', chance:0.005},
+];
+const SHOP_START_IDX = PLAYERS.length;
+SHOP_PLAYERS.forEach(p=> PLAYERS.push({...p, shop:true}));
+const PACK_COST = 40;
+const PACK_SIZE = 5;
+const TIER_LABEL = {common:'🟢 רגיל', uncommon:'🔵 לא שכיח', rare:'🟣 נדיר', legendary:'🟡 אגדי'};
+
+function drawShopPlayer(){
+  const r = Math.random();
+  let acc = 0;
+  for(let i=0;i<SHOP_PLAYERS.length;i++){
+    acc += SHOP_PLAYERS[i].chance;
+    if(r <= acc) return SHOP_START_IDX + i;
+  }
+  return SHOP_START_IDX; // fallback to common
+}
 
 const MISSIONS = [
   {id:'first_win',    text:'נצח במשחק הראשון שלך',            diff:'easy', reward:5},
@@ -1003,17 +1195,58 @@ function getDailyMissions(){
 
 function missionKey(id){ return `${new Date().toDateString()}::${id}`; }
 
+/* ================= monthly prize ================= */
+function grantMonthlyPrize(){
+  const todayKey = new Date().toDateString();
+  try {
+    if(localStorage.getItem('cupManagerLastPrizeDate') === todayKey) return;
+    localStorage.setItem('cupManagerLastPrizeDate', todayKey);
+  } catch(e){
+    // storage unavailable (e.g. private browsing) - fall back to always showing
+  }
+
+  const monthKey = `${new Date().getFullYear()}-${new Date().getMonth()}`;
+  const rng = seededRng(monthKey);
+  const baseAmount = 10 + Math.floor(rng()*11); // 10-20, same for everyone opening the game this month
+
+  // rare "special" tier - each device rolls independently, so this can't literally
+  // guarantee an exact headcount of winners across everyone who plays, just makes it rare
+  const isSpecial = Math.random() < 0.05;
+
+  if(isSpecial){
+    state.diamonds += 100;
+    updateDiamondDisplay();
+    alert(`🌟 מזל אדיר! השתדרוג של החודש - אתה אחד מהמעטים שקיבלו פרס מיוחד:\n+100💎 יהלומים!`);
+  } else {
+    state.diamonds += baseAmount;
+    updateDiamondDisplay();
+    alert(`🎁 פרס פתיחת החודש! כולם שפותחים את המשחק החודש מקבלים אותו דבר:\n+${baseAmount}💎 יהלומים`);
+  }
+}
+
 const LEAGUES = [
-  {num:5, leagueName:"ליגת העל",        teamName:"כוכבי הירקון",     emoji:"🌊", atk:2.0, def:1.8, keeperSkill:0.18},
-  {num:4, leagueName:"הליגה הצרפתית",   teamName:"האריות של פרובאנס", emoji:"🐓", atk:2.5, def:2.3, keeperSkill:0.26},
+  {num:1, leagueName:"ליגת העל",        teamName:"כוכבי הירקון",     emoji:"🌊", atk:2.0, def:1.8, keeperSkill:0.18},
+  {num:2, leagueName:"הליגה הצרפתית",   teamName:"האריות של פרובאנס", emoji:"🐓", atk:2.5, def:2.3, keeperSkill:0.26},
   {num:3, leagueName:"הליגה הגרמנית",   teamName:"פלדת הריין",       emoji:"🦅", atk:2.9, def:2.7, keeperSkill:0.34},
-  {num:2, leagueName:"הליגה הספרדית",   teamName:"להבת אנדלוסיה",    emoji:"🔥", atk:3.3, def:3.1, keeperSkill:0.42},
-  {num:1, leagueName:"הליגה האנגלית",   teamName:"אבירי לונדון",     emoji:"👑", atk:3.8, def:3.6, keeperSkill:0.50},
+  {num:4, leagueName:"הליגה הספרדית",   teamName:"להבת אנדלוסיה",    emoji:"🔥", atk:3.3, def:3.1, keeperSkill:0.42},
+  {num:5, leagueName:"הליגה האנגלית",   teamName:"אבירי לונדון",     emoji:"👑", atk:3.8, def:3.6, keeperSkill:0.50},
 ];
 const PRACTICE_OPPONENT = {num:0, leagueName:"אימון", teamName:"קבוצת אימון", emoji:"🎯", atk:2.8, def:2.6, keeperSkill:0.30};
 
 /* ================= app state ================= */
-let state = { teamName:"", selected:[], round:0, matchLength:'short', squadSize:5, funMode:'normal', upgrade:0, vsFriend:false, spectate:false, gameInLeague:0, premiumUnlocked:false, diamonds:0, missionsDone:{}, winStreak:0 };
+function loadSavedDiamonds(){
+  try {
+    const saved = localStorage.getItem('cupManagerDiamonds');
+    return saved !== null ? (parseInt(saved, 10) || 0) : 0;
+  } catch(e){
+    return 0;
+  }
+}
+
+let state = { teamName:"", selected:[], round:0, squadSize:5, funMode:'normal', upgrade:0, vsFriend:false, spectate:false, gameInLeague:0, premiumUnlocked:false, diamonds:loadSavedDiamonds(), missionsDone:{}, winStreak:0, collection:[], pendingSwaps:[], injuries:{} };
+const INJURY_CHANCE = 0.35;
+const INJURY_GAMES = 2;
+const COLLECTION_SIZE = 20;
 
 function completeMission(id){
   const activeIds = getDailyMissions().map(m=>m.id);
@@ -1034,6 +1267,7 @@ function completeMission(id){
 function updateDiamondDisplay(){
   const el = $('diamondCounter');
   if(el) el.textContent = `💎 ${state.diamonds}`;
+  try { localStorage.setItem('cupManagerDiamonds', String(state.diamonds)); } catch(e){}
 }
 let isPracticeMatch = false;
 function currentOpponent(){ return isPracticeMatch ? PRACTICE_OPPONENT : LEAGUES[state.round]; }
@@ -1064,27 +1298,97 @@ $('btnNameNext').addEventListener('click', ()=>{
 
 /* ================= screen 2: draft ================= */
 function renderDraft(){
+  const removedInjured = state.selected.filter(idx => state.injuries[idx]);
+  if(removedInjured.length){
+    state.selected = state.selected.filter(idx => !state.injuries[idx]);
+  }
+
   const grid = $('playerGrid');
   grid.innerHTML = "";
   const poolSize = state.squadSize === 11 ? 20 : (state.squadSize === 7 ? 18 : 15);
   PLAYERS.slice(0, poolSize).forEach((p, idx)=>{
+    const injured = state.injuries[idx];
     const div = document.createElement('div');
-    div.className = "player";
+    div.className = "player" + (injured ? " injured" : "");
     div.dataset.idx = idx;
     div.innerHTML = `
       <span class="emoji">${p.emoji}</span>
       <div class="name">${p.name}</div>
       <div class="pos">${p.pos}</div>
-      <div class="special">✨ ${p.special}</div>
+      <div class="special">${injured ? `🤕 פצוע - עוד ${injured} משחקים` : `✨ ${p.special}`}</div>
       <div class="stat-row">
         <span class="stat atk">התקפה ${p.atk}</span>
         <span class="stat def">הגנה ${p.def}</span>
       </div>`;
-    div.addEventListener('click', ()=>togglePlayer(idx, div));
+    if(!injured) div.addEventListener('click', ()=>togglePlayer(idx, div));
     grid.appendChild(div);
   });
   renderPremiumCard();
+  renderShopUnlockedCards();
   updatePickCount();
+
+  if(removedInjured.length){
+    const names = removedInjured.map(idx=>PLAYERS[idx].name).join(', ');
+    showDraftNotice(`🤕 ${names} נפצע/ו והוסר/ו מהקבוצה - בחר תחליף`);
+  } else {
+    const existing = document.getElementById('draftNotice');
+    if(existing) existing.remove();
+  }
+}
+
+function showDraftNotice(text){
+  let el = document.getElementById('draftNotice');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'draftNotice';
+    el.className = 'shop-note';
+    el.style.textAlign = 'center';
+    el.style.marginBottom = '8px';
+    $('playerGrid').parentNode.insertBefore(el, $('playerGrid'));
+  }
+  el.textContent = text;
+}
+
+const SELL_PRICE = {common:10, uncommon:10, rare:40, legendary:40};
+
+function renderShopUnlockedCards(){
+  const grid = $('playerGrid');
+  state.collection.forEach(idx=>{
+    const p = PLAYERS[idx];
+    if(!p) return;
+    const injured = state.injuries[idx];
+    const div = document.createElement('div');
+    div.className = "player shop-tier-" + p.tier + (state.selected.includes(idx) ? " selected" : "") + (injured ? " injured" : "");
+    div.innerHTML = `
+      <span class="emoji">${p.emoji}</span>
+      <div class="name">${p.name}</div>
+      <div class="pos">${p.pos}</div>
+      <div class="special">${injured ? `🤕 פצוע - עוד ${injured} משחקים` : TIER_LABEL[p.tier]}</div>
+      <div class="stat-row">
+        <span class="stat atk">התקפה ${p.atk}</span>
+        <span class="stat def">הגנה ${p.def}</span>
+      </div>
+      <button class="sell-btn" data-idx="${idx}">💰 מכור (${SELL_PRICE[p.tier]}💎)</button>`;
+    if(!injured) div.addEventListener('click', ()=>togglePlayer(idx, div));
+    div.querySelector('.sell-btn').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      sellShopPlayer(idx);
+    });
+    grid.appendChild(div);
+  });
+}
+
+function sellShopPlayer(idx){
+  const p = PLAYERS[idx];
+  const price = SELL_PRICE[p.tier];
+  if(!confirm(`למכור את "${p.name}" תמורת ${price}💎? הוא ייעלם מהאוסף שלך.`)) return;
+  const cIdx = state.collection.indexOf(idx);
+  if(cIdx >= 0) state.collection.splice(cIdx, 1);
+  const pos = state.selected.indexOf(idx);
+  if(pos >= 0) state.selected.splice(pos, 1);
+  state.diamonds += price;
+  updateDiamondDisplay();
+  renderDraft();
 }
 
 function renderPremiumCard(){
@@ -1134,13 +1438,68 @@ function attemptPurchasePremium(){
   }
 }
 
+/* ================= shop ================= */
+$('btnOpenShop').addEventListener('click', ()=>{
+  $('shopResults').innerHTML = '';
+  $('collectionCount').textContent = `אוסף: ${state.collection.length}/${COLLECTION_SIZE} קלפים`;
+  show('shopModal');
+});
+$('btnCloseShop').addEventListener('click', ()=> hide('shopModal'));
+
+$('btnBuyPack').addEventListener('click', ()=>{
+  if(state.diamonds < PACK_COST){
+    $('shopResults').innerHTML = `<div class="shop-result-item">❌ צריך ${PACK_COST}💎, יש לך ${state.diamonds}💎</div>`;
+    return;
+  }
+  state.diamonds -= PACK_COST;
+  let refund = 0;
+  const pulls = [];
+  for(let i=0;i<PACK_SIZE;i++){
+    const idx = drawShopPlayer();
+    const p = PLAYERS[idx];
+    const alreadyOwned = state.collection.includes(idx);
+    if(alreadyOwned){
+      refund += 2;
+      pulls.push({p, status:'dup'});
+    } else if(state.collection.length < COLLECTION_SIZE){
+      state.collection.push(idx);
+      pulls.push({p, status:'new'});
+    } else {
+      state.pendingSwaps.push(idx);
+      pulls.push({p, status:'pending'});
+    }
+  }
+  state.diamonds += refund;
+  updateDiamondDisplay();
+
+  const statusText = {
+    new: '✨ חדש! נוסף לאוסף',
+    dup: '(כפול, +2💎)',
+    pending: '🔒 האוסף מלא (20/20) - יוצע להחלפה אחרי הניצחון הבא'
+  };
+  $('shopResults').innerHTML = pulls.map(({p,status})=>`
+    <div class="shop-result-item">
+      <span>${p.emoji}</span>
+      <span class="rname">${p.name}</span>
+      <span>${TIER_LABEL[p.tier]}</span>
+      <span>${statusText[status]}</span>
+    </div>
+  `).join('');
+  renderDraft();
+});
+
+function subAllowance(size){
+  return size===11 ? 5 : size===7 ? 3 : 1;
+}
+
 function togglePlayer(idx, el){
+  const total = state.squadSize + subAllowance(state.squadSize);
   const pos = state.selected.indexOf(idx);
   if(pos >= 0){
     state.selected.splice(pos,1);
     el.classList.remove('selected');
   } else {
-    if(state.selected.length >= state.squadSize) return;
+    if(state.selected.length >= total) return;
     state.selected.push(idx);
     el.classList.add('selected');
   }
@@ -1148,8 +1507,10 @@ function togglePlayer(idx, el){
 }
 
 function updatePickCount(){
-  $('pickCount').innerHTML = `נבחרו <strong>${state.selected.length}</strong> מתוך ${state.squadSize}`;
-  $('btnDraftNext').disabled = state.selected.length !== state.squadSize;
+  const subs = subAllowance(state.squadSize);
+  const total = state.squadSize + subs;
+  $('pickCount').innerHTML = `נבחרו <strong>${state.selected.length}</strong> מתוך ${total} (${state.squadSize} מתחילים + ${subs} ספסל, לפי סדר הבחירה)`;
+  $('btnDraftNext').disabled = state.selected.length !== total;
 }
 
 document.querySelectorAll('#squadToggle .length-btn').forEach(btn=>{
@@ -1225,14 +1586,6 @@ function renderBracket(){
   $('btnPlayMatch').textContent = (state.round===0 && state.gameInLeague===0) ? "🔔 שרוק להתחלת המשחק" : "🔔 המשך למשחק הבא";
 }
 
-document.querySelectorAll('#lengthToggle .length-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('#lengthToggle .length-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    state.matchLength = btn.dataset.len;
-  });
-});
-
 document.querySelectorAll('#funToggle .length-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('#funToggle .length-btn').forEach(b=>b.classList.remove('active'));
@@ -1271,7 +1624,7 @@ $('btnPlayMatch').addEventListener('click', ()=>{
 });
 
 /* ================= screen 4: LIVE MATCH ENGINE ================= */
-const PW = 400, PH = 232;
+const PW = 640, PH = 370;
 const STAND_H = 22;
 const CANVAS_H = PH + STAND_H*2;
 const GOAL_HALF = 34;
@@ -1286,16 +1639,48 @@ const GAME_SPEED = 0.62; // overall slow-down multiplier for player and ball mov
 let camera = {x: PW/2, y: PH/2};
 
 function updateCamera(){
-  camera.x += (ball.x - camera.x) * 0.08;
-  camera.y += (ball.y - camera.y) * 0.08;
+  // follow the ball, leading slightly in the direction it travels
+  // lead in the direction of play: the carrier's facing when dribbling, the ball's flight otherwise
+  let lx, ly;
+  if(carrier){
+    const f = carrier.facing || {x:0, y:0};
+    lx = f.x * 35; ly = f.y * 15;
+  } else {
+    lx = (ball.vx||0) * 12; ly = (ball.vy||0) * 6;
+  }
+  camera.x += (ball.x + lx - camera.x) * 0.05;
+  camera.y += (ball.y + ly - camera.y) * 0.04;
 }
 
 let canvas, renderer, scene, camera3d, ambientLight;
 let meshMine = [], meshOpp = [], keeperMineMesh, keeperOppMesh, ballMesh, ringMine, ringOpp;
+let referee, refereeMesh;
 let myTeam = [], oppTeam = [], controlled, controlled2, ball;
 let keeperMine, keeperOpp;
 let carrier = null;
+let benchList = [], subsRemaining = 0;
 let lastTouchTeam = null;
+let lastTouchEntity = null;
+let playerDiscipline = {};
+
+function getDiscipline(idx){
+  if(!playerDiscipline[idx]) playerDiscipline[idx] = {tackleFails:0, fouls:0};
+  return playerDiscipline[idx];
+}
+
+function sendOffPlayer(entity){
+  const playerIdx = entity.playerIdx;
+  const name = PLAYERS[playerIdx]?.name || 'שחקן';
+  const idx = myTeam.indexOf(entity);
+  if(idx >= 0){
+    myTeam.splice(idx, 1);
+    const mesh = meshMine.splice(idx, 1)[0];
+    if(mesh) scene.remove(mesh);
+  }
+  showStatus(`🟥 כרטיס אדום! ${name} מודח מהמשחק - נשארתם עם ${myTeam.length} שחקנים`);
+  if(controlled === entity) updateControlledSwitch();
+  if(state.vsFriend && controlled2 === entity) updateControlledSwitch2();
+}
 let foulLockFrames = 0;
 let glitchBurstFrames = 0, glitchNextIn = 90;
 let joystickVec = {x:0, y:0};
@@ -1307,7 +1692,8 @@ let chargeStart2 = null, charging2 = false;
 let running = false;
 let timerInterval = null;
 let timeLeft = 45;
-let mode = 'regular'; // 'regular' | 'overtime'
+let mode = 'first_half'; // 'first_half' | 'halftime' | 'second_half' | 'overtime'
+const HALF_SECONDS = 150; // 2:30 per half
 let homeScore = 0, awayScore = 0;
 let speedPlayer, speedAI, maxPower, minPower, captureBonusMine, oppShootChance, mySkill, oppSkill;
 let engineInit = false;
@@ -1346,11 +1732,16 @@ function setupJoystick(baseEl, knobEl, radius, setVec){
   }
 }
 
+const HEADER_REACH = 22;
+
 function setupShootButton(btnEl, getCarrier, getEntity){
   let charging = false, chargeStart = null;
   btnEl.addEventListener('pointerdown', ()=>{
     if(!running) return;
-    if(getCarrier() !== getEntity()) return;
+    const entity = getEntity();
+    const canShoot = getCarrier() === entity;
+    const canHeader = ball.airborne && Math.hypot(entity.x-ball.x, entity.y-ball.y) < HEADER_REACH;
+    if(!canShoot && !canHeader) return;
     charging = true;
     chargeStart = performance.now();
     btnEl.classList.add('charging');
@@ -1360,10 +1751,27 @@ function setupShootButton(btnEl, getCarrier, getEntity){
     charging = false;
     btnEl.classList.remove('charging');
     const entity = getEntity();
-    if(getCarrier() !== entity) return;
     const held = Math.min(performance.now()-chargeStart, MAX_CHARGE_MS);
-    const power = minPower + (held/MAX_CHARGE_MS)*(maxPower-minPower);
-    doShoot(entity, entity.facing || {x: entity.team==='mine'?1:-1, y:0}, power);
+    const p = entity.playerIdx!=null ? PLAYERS[entity.playerIdx] : null;
+    const atk = p ? p.atk : 3;
+    const pMin = 3.3 + (atk-3)*0.35;
+    let pMax = 5.6 + (atk-3)*1.0;
+    if(p && POWER_SPECIALS.includes(p.special)) pMax *= 1.15;
+    const power = pMin + (held/MAX_CHARGE_MS)*(pMax-pMin);
+
+    if(getCarrier() === entity){
+      doShoot(entity, entity.facing || {x: entity.team==='mine'?1:-1, y:0}, power);
+      return;
+    }
+    const canHeader = ball.airborne && Math.hypot(entity.x-ball.x, entity.y-ball.y) < HEADER_REACH;
+    if(canHeader){
+      const dirX = entity.team==='mine' ? 1 : -1;
+      const aimY = (PH/2 + (Math.random()*20-10)) - entity.y;
+      ball.airborne = false;
+      clearTimeout(ball._airTimer);
+      doShoot(entity, {x: dirX, y: aimY}, power*0.9);
+      showStatus('🤯 נגיחה!');
+    }
   }
   btnEl.addEventListener('pointerup', release);
   btnEl.addEventListener('pointerleave', ()=>{ if(charging) release(); });
@@ -1381,7 +1789,7 @@ function initEngineOnce(){
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x102842);
   scene.fog = new THREE.Fog(0x122c48, 360, 880);
-  camera3d = new THREE.PerspectiveCamera(45, PW/CANVAS_H, 1, 2000);
+  camera3d = new THREE.PerspectiveCamera(CAM_FOV, PW/CANVAS_H, 1, 3000);
 
   // floodlit night match: bright pitch, cool shadows
   ambientLight = new THREE.AmbientLight(0xffffff, 0.42);
@@ -1402,8 +1810,12 @@ function initEngineOnce(){
   setupJoystick($('joyBase2'), $('joyKnob2'), 22, v=>{ joystickVec2 = v; });
   setupShootButton($('shootBtn2'), ()=>carrier, ()=>controlled2);
 
-  $('tackleBtn').addEventListener('pointerdown', attemptTackle);
+  $('actionBtn').addEventListener('pointerdown', ()=>{
+    if(carrier && carrier === controlled) attemptPass(); else attemptTackle();
+  });
+  setupPinchZoom();
   $('liftBtn').addEventListener('pointerdown', attemptLift);
+  $('subBtn').addEventListener('pointerdown', openSubModal);
 }
 
 function attemptTackle(){
@@ -1411,18 +1823,45 @@ function attemptTackle(){
   if(!carrier || carrier.team === 'mine') { return; }
   const dist = Math.hypot(controlled.x-ball.x, controlled.y-ball.y);
   if(dist > CAPTURE_R + 16) return;
-  const chance = 0.55 + captureBonusMine*0.03;
+  const ctrlP = controlled.playerIdx!=null ? PLAYERS[controlled.playerIdx] : null;
+  const isCleanTackler = ctrlP && ctrlP.special === CLEAN_TACKLE_SPECIAL;
+  const defBonus = ctrlP ? (ctrlP.def-3) : (captureBonusMine/1.4);
+  const chance = 0.55 + defBonus*0.045 + (isCleanTackler ? 0.15 : 0);
+  let resultMsg = '';
   if(Math.random() < chance){
     carrier = controlled;
     lastTouchTeam = 'mine';
-    showStatus('🦵 תיקול מוצלח!');
+    lastTouchEntity = controlled;
+    controlled.rating = (controlled.rating||6) + 0.15;
+    resultMsg = isCleanTackler ? '🦵 תיקול נקי ומדויק!' : '🦵 תיקול מוצלח!';
     completeMission('tackle_success');
-  } else if(Math.random() < FOUL_CHANCE*1.6){
-    showStatus('🚫 פאול על התיקול!');
+  } else if(!isCleanTackler && Math.random() < FOUL_CHANCE*1.6){
+    resultMsg = '🚫 פאול על התיקול!';
     foulLockFrames = 25;
   } else {
-    showStatus('❌ התיקול לא הצליח');
+    resultMsg = isCleanTackler ? '❌ התיקול לא הצליח, אבל נקי לגמרי' : '❌ התיקול לא הצליח';
   }
+
+  let cardEntity = null;
+  if(!isCleanTackler && controlled.playerIdx != null && !resultMsg.startsWith('🦵')){
+    const disc = getDiscipline(controlled.playerIdx);
+    disc.tackleFails++;
+    if(disc.tackleFails === 1){
+      resultMsg += ' 🟨 כרטיס צהוב על תיקול לא מוצלח';
+    } else if(disc.tackleFails >= 2){
+      resultMsg += ' 🟥 כרטיס אדום!';
+      cardEntity = controlled;
+    }
+  }
+
+  if(!isCleanTackler && !isPracticeMatch && controlled.playerIdx!=null && Math.random() < INJURY_CHANCE){
+    state.injuries[controlled.playerIdx] = INJURY_GAMES;
+    const injName = PLAYERS[controlled.playerIdx].name;
+    showStatus(`${resultMsg} 🤕 ${injName} נפצע! ייעדר ${INJURY_GAMES} משחקים`);
+  } else {
+    showStatus(resultMsg);
+  }
+  if(cardEntity) sendOffPlayer(cardEntity);
 }
 
 function attemptLift(){
@@ -1445,6 +1884,118 @@ function doLift(entity, dir){
   ball._airStart = performance.now();
   clearTimeout(ball._airTimer);
   ball._airTimer = setTimeout(()=>{ ball.airborne = false; }, 550);
+}
+
+function updateSubButton(){
+  const el = $('subCount');
+  if(el) el.textContent = subsRemaining;
+}
+
+let subSelectedBenchPos = null;
+
+function openSubModal(){
+  if(state.spectate) return;
+  $('subModal').querySelector('.headline').textContent = '🔄 חילוף שחקנים';
+  if(subsRemaining <= 0){
+    showStatus('❌ נגמרו החילופים למשחק הזה');
+    return;
+  }
+  if(benchList.length === 0){
+    showStatus('❌ אין שחקנים בספסל');
+    return;
+  }
+  subSelectedBenchPos = null;
+  renderSubModal();
+  show('subModal');
+}
+$('btnCloseSub').addEventListener('click', ()=> hide('subModal'));
+
+function renderSubModal(){
+  const benchHTML = benchList.map((idx,pos)=>{
+    const p = PLAYERS[idx];
+    const isSel = pos === subSelectedBenchPos;
+    return `<div class="shop-result-item bench-option${isSel ? ' selected-pick' : ''}" data-pos="${pos}" style="cursor:pointer;">
+      <span>${p.emoji}</span>
+      <span class="rname">${p.name}</span>
+      <span>התקפה ${p.atk} / הגנה ${p.def}</span>
+      <span>${isSel ? '✅ נבחר' : ''}</span>
+    </div>`;
+  }).join('');
+
+  const onPitchSorted = myTeam.slice().sort((a,b)=> (a.rating||6) - (b.rating||6));
+  const pitchHTML = onPitchSorted.map(e=>{
+    const p = PLAYERS[e.playerIdx] || {emoji:'👤', name:'?', atk:0, def:0};
+    return `<div class="shop-result-item pitch-option" data-playeridx="${e.playerIdx}" style="cursor:pointer;">
+      <span>${p.emoji}</span>
+      <span class="rname">${p.name}</span>
+      <span>⭐ ${(e.rating||6).toFixed(1)}</span>
+      <span>➡️ מחליף</span>
+    </div>`;
+  }).join('');
+
+  $('subInfo').textContent = subSelectedBenchPos === null
+    ? `נותרו ${subsRemaining} חילופים • שלב 1: בחר שחקן מהספסל להכניס`
+    : `נותרו ${subsRemaining} חילופים • שלב 2: בחר מי יורד מהמגרש (מהציון הנמוך לגבוה)`;
+
+  $('subBenchList').innerHTML = `
+    <div class="shop-pack-title" style="margin-top:2px;">📋 הספסל</div>
+    ${benchHTML}
+    ${subSelectedBenchPos !== null ? `
+      <div class="shop-pack-title" style="margin-top:12px;">⬇️ מי יורד? (מהחלש לחזק)</div>
+      ${pitchHTML}
+    ` : ''}
+  `;
+
+  $('subBenchList').querySelectorAll('.bench-option').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      subSelectedBenchPos = parseInt(el.dataset.pos, 10);
+      renderSubModal();
+    });
+  });
+  $('subBenchList').querySelectorAll('.pitch-option').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      performSubstitution(subSelectedBenchPos, parseInt(el.dataset.playeridx, 10));
+    });
+  });
+}
+
+function performSubstitution(benchPos, outgoingIdx){
+  const incomingIdx = benchList[benchPos];
+  if(incomingIdx === undefined) return;
+  const outgoing = myTeam.find(e=>e.playerIdx === outgoingIdx);
+  if(!outgoing) return;
+
+  const inP = PLAYERS[incomingIdx], outP = PLAYERS[outgoingIdx];
+
+  benchList.splice(benchPos, 1);
+  subSelectedBenchPos = null;
+  hide('subModal');
+  running = false;
+
+  const spotX = outgoing.x, spotY = outgoing.y;
+  const sidelineY = outgoing.y > PH/2 ? PH+18 : -18;
+
+  showStatus(`🚶 ${outP.name} יורד מהמגרש...`);
+  outgoing.x = spotX; outgoing.y = sidelineY;
+  outgoing.vx = 0; outgoing.vy = 0;
+  render();
+
+  setTimeout(()=>{
+    outgoing.playerIdx = incomingIdx;
+    outgoing.emoji = inP.emoji;
+    outgoing.rating = 6.0;
+    outgoing.x = spotX; outgoing.y = spotY;
+    benchList.push(outgoingIdx);
+    subsRemaining--;
+    updateSubButton();
+    showStatus(`✅ ${inP.name} נכנס למגרש במקום ${outP.name}!`);
+    render();
+
+    setTimeout(()=>{
+      running = true;
+      requestAnimationFrame(tick);
+    }, 700);
+  }, 900);
 }
 
 function generateFormation(count, side){
@@ -1481,10 +2032,18 @@ function buildTeam(count, team){
 }
 
 function makeEntities(){
+  playerDiscipline = {};
   myTeam = buildTeam(state.squadSize, 'mine');
   oppTeam = buildTeam(state.squadSize, 'opp');
-  myTeam.forEach((e,i)=>{ e.emoji = PLAYERS[state.selected[i]]?.emoji || '👤'; });
+  myTeam.forEach((e,i)=>{
+    e.playerIdx = state.selected[i];
+    e.emoji = PLAYERS[state.selected[i]]?.emoji || '👤';
+    e.rating = 6.0;
+  });
   oppTeam.forEach(e=>{ e.emoji = '🛡️'; });
+  benchList = state.selected.slice(state.squadSize);
+  subsRemaining = subAllowance(state.squadSize);
+  updateSubButton();
   keeperMine = {team:'mine', x:20, y:PH/2, vx:0, vy:0, facing:{x:1,y:0}, animPhase:0};
   keeperOpp  = {team:'opp',  x:PW-20, y:PH/2, vx:0, vy:0, facing:{x:-1,y:0}, animPhase:0};
   ball = {x:PW/2, y:PH/2, vx:0, vy:0, airborne:false};
@@ -1519,7 +2078,7 @@ function resetPositions(){
 
 function updateControlledSwitch(){
   let best = controlled, bestDist = Math.hypot(controlled.x-ball.x, controlled.y-ball.y);
-  myTeam.forEach(e=>{
+  myTeam.concat([keeperMine]).forEach(e=>{
     if(e === controlled) return;
     const d = Math.hypot(e.x-ball.x, e.y-ball.y);
     if(d < bestDist - 10){ best = e; bestDist = d; }
@@ -1552,12 +2111,16 @@ function updateScoreDisplay(pulse){
 function updateTimerDisplay(){
   const m = Math.floor(timeLeft/60);
   const s = timeLeft%60;
-  $('timerLabel').textContent = m>0 ? `${m}:${s.toString().padStart(2,'0')}` : `${s}`;
+  const timeStr = m>0 ? `${m}:${s.toString().padStart(2,'0')}` : `${s}`;
+  const halfLabel = mode==='first_half' ? ' (מחצית 1)' : mode==='second_half' ? ' (מחצית 2)' : mode==='overtime' ? ' (הארכה)' : '';
+  $('timerLabel').textContent = timeStr + halfLabel;
 }
 
 function startMatch(){
   initEngineOnce();
   clearInterval(timerInterval);
+  hide('freekickChoice');
+  pendingCornerData = null;
   const opp = currentOpponent();
   const my = myPower();
   if(state.squadSize===11 && !isPracticeMatch) completeMission('squad11');
@@ -1589,8 +2152,8 @@ function startMatch(){
   glitchNextIn = 90;
 
   makeEntities();
-  mode = 'regular';
-  timeLeft = state.matchLength === 'long' ? 300 : 45;
+  mode = 'first_half';
+  timeLeft = HALF_SECONDS;
   updateTimerDisplay();
 
   running = true;
@@ -1613,7 +2176,20 @@ function startTimer(){
 function onTimerZero(){
   const opp = currentOpponent();
   running = false;
-  if(mode === 'regular'){
+  if(mode === 'first_half'){
+    mode = 'halftime';
+    showStatus('⏸️ סוף המחצית הראשונה - הפסקה');
+    setTimeout(()=>{
+      mode = 'second_half';
+      timeLeft = HALF_SECONDS;
+      updateTimerDisplay();
+      showStatus('🔔 המחצית השנייה מתחילה!');
+      resetPositions();
+      running = true;
+      requestAnimationFrame(tick);
+      startTimer();
+    }, 2500);
+  } else if(mode === 'second_half'){
     if(homeScore === awayScore){
       mode = 'overtime';
       timeLeft = 20;
@@ -1659,6 +2235,12 @@ function penaltyShootoutWrapper(){
 function showResult(won, opp){
   running = false;
   clearInterval(timerInterval);
+  if(!isPracticeMatch){
+    Object.keys(state.injuries).forEach(idx=>{
+      state.injuries[idx]--;
+      if(state.injuries[idx] <= 0) delete state.injuries[idx];
+    });
+  }
   const area = $('resultArea');
   if(won){
     const willPromote = !isPracticeMatch && (state.gameInLeague+1) >= 5;
@@ -1708,11 +2290,49 @@ function showResult(won, opp){
       }
       renderBracket();
       show('screen-bracket');
+      if(state.pendingSwaps.length > 0){
+        offerCollectionSwap(state.pendingSwaps.shift());
+      }
     } else {
       state.winStreak = 0;
       changeTeamAfterLoss();
     }
   };
+}
+
+function offerCollectionSwap(newIdx){
+  const newP = PLAYERS[newIdx];
+  $('subInfo').textContent = `🎉 ניצחת! קיבלת קלף שהאוסף שלך מלא (20/20): ${newP.emoji} ${newP.name} (${TIER_LABEL[newP.tier]}). בחר קלף קיים להחליף, או וותר עליו.`;
+  $('subBenchList').innerHTML = state.collection.map((idx,pos)=>{
+    const p = PLAYERS[idx];
+    return `<div class="shop-result-item swap-option" data-pos="${pos}" style="cursor:pointer;">
+      <span>${p.emoji}</span>
+      <span class="rname">${p.name}</span>
+      <span>${TIER_LABEL[p.tier]}</span>
+      <span>החלף ➡️</span>
+    </div>`;
+  }).join('') + `<button class="secondary" id="btnDiscardSwap">🗑️ וותר על הקלף החדש (+3💎 פיצוי)</button>`;
+
+  $('subBenchList').querySelectorAll('.swap-option').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const pos = parseInt(el.dataset.pos, 10);
+      const oldIdx = state.collection[pos];
+      state.collection[pos] = newIdx;
+      const sel = state.selected.indexOf(oldIdx);
+      if(sel >= 0) state.selected[sel] = newIdx;
+      hide('subModal');
+      alert(`✅ ${PLAYERS[oldIdx].name} הוחלף ב-${newP.name} באוסף שלך!`);
+      renderDraft();
+    });
+  });
+  $('btnDiscardSwap').addEventListener('click', ()=>{
+    state.diamonds += 3;
+    updateDiamondDisplay();
+    hide('subModal');
+  });
+
+  $('subModal').querySelector('.headline').textContent = '🃏 קלף חדש - האוסף מלא!';
+  show('subModal');
 }
 
 function changeTeamAfterLoss(){
@@ -1734,13 +2354,80 @@ function doShoot(entity, dir, power){
   carrier = null;
 }
 
+function doPass(passer, target){
+  // lead the pass toward where the receiver is heading, not just where they stand now
+  const leadX = target.x + (target.vx||0)*16;
+  const leadY = target.y + (target.vy||0)*16;
+  const dx = leadX-passer.x, dy = leadY-passer.y;
+  const mag = Math.hypot(dx,dy) || 1;
+  const power = Math.min(7.5, 3.5 + mag*0.045);
+  ball.vx = dx/mag*power;
+  ball.vy = dy/mag*power;
+  ball.x += dx/mag*(CAPTURE_R+5);
+  ball.y += dy/mag*(CAPTURE_R+5);
+  lastTouchTeam = passer.team;
+  lastTouchEntity = passer;
+  carrier = null;
+  if(passer.team==='mine'){
+    passer.rating = (passer.rating||6) + 0.1;
+  }
+  showStatus('⚽ מסירה יפה!');
+}
+
+function attemptPass(){
+  if(!running || state.spectate) return;
+  if(carrier !== controlled) return;
+  const target = findForwardTeammate(controlled);
+  if(!target){
+    showStatus('🎯 אין למי למסור');
+    return;
+  }
+  doPass(controlled, target);
+}
+
+function sendCross(fromX, fromY, toX, toY, byTeam, hangMs){
+  const dx = toX-fromX, dy = toY-fromY;
+  const mag = Math.hypot(dx,dy) || 1;
+  const power = 6.5;
+  ball.x = fromX; ball.y = fromY;
+  ball.vx = dx/mag*power;
+  ball.vy = dy/mag*power;
+  carrier = null;
+  lastTouchTeam = byTeam;
+  ball.airborne = true;
+  ball._airStart = performance.now();
+  clearTimeout(ball._airTimer);
+  ball._airTimer = setTimeout(()=>{ ball.airborne = false; }, hangMs || 700);
+}
+
 /* ---- AI steering ---- */
+const SPEED_SPECIALS = ['פיצוץ מהירות', 'ריצה פרועה', 'פריצה מהירה', 'מהירות ברק', 'אנרגיה אינסופית'];
+const POWER_SPECIALS = ['בעיטה משוריינת', 'דיוק בבעיטה', 'דיוק חד', 'גמר קר רוח'];
+const DEFENSE_SPECIALS = ['קיר בלתי עביר', 'מגן ברזל', 'הגנה בלתי מעורערת', 'ריכוז מוחלט'];
+const CLEAN_TACKLE_SPECIAL = 'טאקל נקי';
+
+function playerHasSpecial(playerIdx, list){
+  if(playerIdx == null) return false;
+  const p = PLAYERS[playerIdx];
+  return p && list.includes(p.special);
+}
+
+function atkSpeedFactor(entity){
+  if(entity.team !== 'mine' || entity.playerIdx == null) return 1;
+  const p = PLAYERS[entity.playerIdx];
+  if(!p) return 1;
+  let factor = 0.75 + (p.atk-1)*0.0625; // atk1 -> 0.75x, atk5 -> 1.0x, atk8 -> 1.19x, atk10 -> 1.31x
+  if(SPEED_SPECIALS.includes(p.special)) factor *= 1.12; // named speed specials get a real extra burst
+  return factor;
+}
+
 function steerTowards(entity, target, speed){
   const dx = target.x - entity.x, dy = target.y - entity.y;
   const dist = Math.hypot(dx,dy);
+  const effSpeed = speed * atkSpeedFactor(entity);
   if(dist > 1.5){
-    entity.vx = dx/dist*speed;
-    entity.vy = dy/dist*speed;
+    entity.vx = dx/dist*effSpeed;
+    entity.vy = dy/dist*effSpeed;
     entity.facing = {x:dx/dist, y:dy/dist};
   } else {
     entity.vx = 0; entity.vy = 0;
@@ -1780,11 +2467,12 @@ function updateAI(entity){
 function movePlayerFromJoystick(entity, joyVec){
   const {x:jx, y:jy} = joyVec;
   const mag = Math.hypot(jx,jy);
+  const effSpeed = speedPlayer * atkSpeedFactor(entity);
   if(mag > 0.12){
     const clampedMag = Math.min(mag,1);
     const nx = jx/mag, ny = jy/mag;
-    entity.vx = nx*speedPlayer*clampedMag;
-    entity.vy = ny*speedPlayer*clampedMag;
+    entity.vx = nx*effSpeed*clampedMag;
+    entity.vy = ny*effSpeed*clampedMag;
     entity.facing = {x:nx, y:ny};
   } else {
     entity.vx = 0; entity.vy = 0;
@@ -1792,14 +2480,23 @@ function movePlayerFromJoystick(entity, joyVec){
   entity.x += entity.vx * GAME_SPEED;
   entity.y += entity.vy * GAME_SPEED;
   clampEntity(entity);
+  if(entity === keeperMine) clampToKeeperBox(entity);
+}
+
+const KEEPER_BOX_DEPTH = 95;
+function clampToKeeperBox(entity){
+  entity.x = Math.max(8, Math.min(KEEPER_BOX_DEPTH, entity.x));
+  entity.y = Math.max(goalTop-26, Math.min(goalBottom+26, entity.y));
 }
 
 function updateKeepers(){
-  const targetMine = Math.max(goalTop+8, Math.min(goalBottom-8, ball.y));
+  if(controlled !== keeperMine){
+    const targetMine = Math.max(goalTop+8, Math.min(goalBottom-8, ball.y));
+    keeperMine.y += (targetMine - keeperMine.y) * 0.15;
+    keeperMine.vx = 0; keeperMine.vy = targetMine - keeperMine.y;
+  }
   const targetOpp = Math.max(goalTop+8, Math.min(goalBottom-8, ball.y));
-  keeperMine.y += (targetMine - keeperMine.y) * 0.15;
   keeperOpp.y += (targetOpp - keeperOpp.y) * 0.15;
-  keeperMine.vx = 0; keeperMine.vy = targetMine - keeperMine.y;
   keeperOpp.vx = 0; keeperOpp.vy = targetOpp - keeperOpp.y;
 }
 
@@ -1820,6 +2517,9 @@ function onGoal(scoringTeam){
   if(scoringTeam==='mine' && !isPracticeMatch){
     if(ball.airborne) completeMission('lift_goal');
     if(homeScore >= 3) completeMission('score_hattrick');
+  }
+  if(scoringTeam==='mine' && lastTouchEntity && lastTouchEntity.team==='mine'){
+    lastTouchEntity.rating = (lastTouchEntity.rating||6) + 1.0;
   }
 
   if(Math.abs(homeScore-awayScore) >= 5){
@@ -1869,8 +2569,13 @@ function tick(){
     carrier = null;
   } else {
     let best=null, bestDist=Infinity;
-    myTeam.concat(oppTeam).forEach(e=>{
-      const bonus = e.team==='mine' ? captureBonusMine : 0;
+    myTeam.concat([keeperMine]).concat(oppTeam).forEach(e=>{
+      let bonus = 0;
+      if(e.team==='mine'){
+        const p = e.playerIdx!=null ? PLAYERS[e.playerIdx] : null;
+        bonus = p ? (p.def-3)*1.4 : captureBonusMine;
+        if(p && DEFENSE_SPECIALS.includes(p.special)) bonus += 3;
+      }
       const threshold = CAPTURE_R + bonus;
       const d = Math.hypot(e.x-ball.x, e.y-ball.y);
       if(d < threshold && d < bestDist){ bestDist = d; best = e; }
@@ -1879,15 +2584,13 @@ function tick(){
     if(foulLockFrames > 0){
       foulLockFrames--;
     } else if(best && carrier && best.team !== carrier.team && best !== carrier && Math.random() < FOUL_CHANCE){
-      const team = carrier.team==='mine' ? state.teamName : currentOpponent().teamName;
-      showStatus(`🚫 פאול! ${team} שומרים על הכדור`);
-      if(carrier.team==='mine' && !isPracticeMatch) completeMission('foul_drawn');
-      foulLockFrames = 25;
+      handleFoul(carrier, best);
+      return;
     } else {
       carrier = best;
     }
   }
-  if(carrier) lastTouchTeam = carrier.team;
+  if(carrier){ lastTouchTeam = carrier.team; lastTouchEntity = carrier; }
 
   if(carrier){
     const f = carrier.facing || {x:1,y:0};
@@ -1902,6 +2605,16 @@ function tick(){
       if(distGoal < AI_SHOOT_RANGE && Math.random() < shootChance){
         const dirX = carrier.team==='mine' ? 1 : -1;
         doShoot(carrier, {x: dirX, y: (PH/2 + (Math.random()*30-15)) - carrier.y}, 5.5+Math.random()*2.5);
+      } else if(distGoal >= AI_SHOOT_RANGE && Math.random() < 0.035){
+        const teammates = (carrier.team==='mine' ? myTeam : oppTeam).filter(e=>e!==carrier);
+        let target = null, bestScore = -Infinity;
+        teammates.forEach(e=>{
+          const d = Math.hypot(e.x-carrier.x, e.y-carrier.y);
+          if(d < 20 || d > 140) return;
+          const forwardness = carrier.team==='mine' ? (e.x-carrier.x) : (carrier.x-e.x);
+          if(forwardness > bestScore){ bestScore = forwardness; target = e; }
+        });
+        if(target) doPass(carrier, target);
       }
     }
   } else {
@@ -1944,18 +2657,168 @@ function tick(){
   requestAnimationFrame(tick);
 }
 
+function handleFoul(fouledCarrier, fouler){
+  running = false;
+  foulLockFrames = 25;
+  const team = fouledCarrier.team==='mine' ? state.teamName : currentOpponent().teamName;
+  let msg = `🚫 פאול! ${team} מקבלים בעיטה חופשית`;
+  if(fouledCarrier.team==='mine' && !isPracticeMatch) completeMission('foul_drawn');
+
+  let cardEntity = null;
+  if(fouler === controlled && fouler.playerIdx != null){
+    const disc = getDiscipline(fouler.playerIdx);
+    disc.fouls++;
+    if(disc.fouls === 3){
+      msg += ' 🟨 כרטיס צהוב (3 עבירות לא מסוכנות)';
+    } else if(disc.fouls === 6){
+      msg += ' 🟥 כרטיס אדום (6 עבירות לא מסוכנות)';
+      cardEntity = fouler;
+    }
+  }
+  showStatus(msg);
+  if(cardEntity) sendOffPlayer(cardEntity);
+
+  if(referee){
+    referee.frozen = true;
+    referee.x = fouledCarrier.x;
+    referee.y = fouledCarrier.y - 14;
+  }
+
+  setTimeout(()=>{
+    showStatus('🔔 השופט שורק! בעיטה חופשית');
+    if(referee) referee.frozen = false;
+    const isHumanTeam = fouledCarrier.team==='mine' && !state.spectate;
+
+    if(isHumanTeam){
+      carrier = fouledCarrier;
+      controlled = fouledCarrier;
+      show('freekickChoice');
+      // keep the match paused until the person picks shoot or pass
+    } else {
+      resolveFreeKickAuto(fouledCarrier);
+      running = true;
+      requestAnimationFrame(tick);
+    }
+  }, 900);
+}
+
+function findForwardTeammate(fromEntity){
+  const teammates = (fromEntity.team==='mine' ? myTeam : oppTeam).filter(e=>e!==fromEntity);
+  let target = null, bestScore = -Infinity;
+  teammates.forEach(e=>{
+    const d = Math.hypot(e.x-fromEntity.x, e.y-fromEntity.y);
+    if(d < 15 || d > 160) return;
+    const forwardness = fromEntity.team==='mine' ? (e.x-fromEntity.x) : (fromEntity.x-e.x);
+    if(forwardness > bestScore){ bestScore = forwardness; target = e; }
+  });
+  return target;
+}
+
+function resolveFreeKickAuto(fouledCarrier){
+  const distGoal = fouledCarrier.team==='mine' ? (PW-fouledCarrier.x) : fouledCarrier.x;
+  if(distGoal < AI_SHOOT_RANGE*1.3){
+    const dirX = fouledCarrier.team==='mine' ? 1 : -1;
+    showStatus('⚽ בעיטה חופשית - ניסיון לשער!');
+    doShoot(fouledCarrier, {x: dirX, y: (PH/2 + (Math.random()*30-15)) - fouledCarrier.y}, 6+Math.random()*2);
+    return;
+  }
+  const target = findForwardTeammate(fouledCarrier);
+  if(target){
+    showStatus('⚽ בעיטה חופשית - מסירה!');
+    doPass(fouledCarrier, target);
+  } else {
+    carrier = fouledCarrier;
+  }
+}
+
+let pendingCornerData = null;
+
+$('btnFkShoot').addEventListener('click', ()=>{
+  hide('freekickChoice');
+  if(pendingCornerData){
+    const {cx, cy, side, team} = pendingCornerData;
+    pendingCornerData = null;
+    const boxX = side==='left' ? 65 : PW-65;
+    const boxY = PH/2 + (Math.random()*40-20);
+    sendCross(cx, cy, boxX, boxY, team, 750);
+    showStatus('🚩 קרן גבוהה לרחבה!');
+    running = true;
+    requestAnimationFrame(tick);
+    return;
+  }
+  running = true;
+  requestAnimationFrame(tick);
+  showStatus('⚽ שלך - בעט כשתהיה מוכן!');
+});
+
+$('btnFkPass').addEventListener('click', ()=>{
+  hide('freekickChoice');
+  if(pendingCornerData){
+    const {taker, team} = pendingCornerData;
+    pendingCornerData = null;
+    const target = findForwardTeammate(taker)
+      || (team==='mine' ? myTeam : oppTeam).find(e=>e!==taker);
+    if(target){
+      showStatus('🎯 קרן קצרה - מסירה!');
+      doPass(taker, target);
+    } else {
+      carrier = taker;
+    }
+    running = true;
+    requestAnimationFrame(tick);
+    return;
+  }
+  const target = findForwardTeammate(controlled);
+  if(target){
+    showStatus('🎯 מסירה חופשית!');
+    doPass(controlled, target);
+  } else {
+    showStatus('🎯 אין למי למסור - משחקים עם הכדור');
+  }
+  running = true;
+  requestAnimationFrame(tick);
+});
+
 function awardCorner(team, side){
   running = false;
   const teamName = team==='mine' ? state.teamName : currentOpponent().teamName;
   showStatus(`🚩 קרן ל${teamName}!`);
   if(team==='mine' && !isPracticeMatch) completeMission('corner_win');
+
+  const cornerY = Math.random()<0.5 ? goalTop-6 : goalBottom+6;
+  const cy = Math.max(6, Math.min(PH-6, cornerY));
+  const cx = side==='left' ? 8 : PW-8;
+
+  const attackers = team==='mine' ? myTeam : oppTeam;
+  let taker = attackers[0], bestD = Infinity;
+  attackers.forEach(e=>{
+    const d = Math.hypot(e.x-cx, e.y-cy);
+    if(d < bestD){ bestD = d; taker = e; }
+  });
+  taker.x = cx; taker.y = cy;
+
+  if(referee){
+    referee.frozen = true;
+    referee.x = cx;
+    referee.y = cy;
+  }
+
   setTimeout(()=>{
-    const cornerY = Math.random()<0.5 ? goalTop-6 : goalBottom+6;
-    ball.y = Math.max(6, Math.min(PH-6, cornerY));
-    ball.x = side==='left' ? 8 : PW-8;
-    ball.vx = 0; ball.vy = 0;
-    carrier = null;
-    lastTouchTeam = null;
+    showStatus('🔔 השופט שורק! הקרן נלקחת');
+    if(referee) referee.frozen = false;
+    if(team==='mine') taker.rating = (taker.rating||6) + 0.05;
+
+    if(team==='mine' && !state.spectate){
+      pendingCornerData = {cx, cy, side, team, taker};
+      show('freekickChoice');
+      return; // stay paused until the person picks cross or short pass
+    }
+
+    const boxX = side==='left' ? 65 : PW-65;
+    const boxY = PH/2 + (Math.random()*40-20);
+    sendCross(cx, cy, boxX, boxY, team, 750);
+    showStatus('🚩 קרן נכנסת לרחבה!');
+
     running = true;
     requestAnimationFrame(tick);
   }, 1000);
@@ -1986,7 +2849,7 @@ function makeLimb(color, length, radius){
   return holder;
 }
 
-function createPlayerMesh(bodyColor, shortsColor){
+function createPlayerMesh(bodyColor, shortsColor, withName){
   const g = new THREE.Group();
 
   const legL = makeLimb(shortsColor, 3, 0.55); legL.position.set(-0.9, 3, 0);
@@ -2010,7 +2873,45 @@ function createPlayerMesh(bodyColor, shortsColor){
   g.add(head);
 
   g.userData = {legL, legR, armL, armR};
+  g.scale.setScalar(PLAYER_SCALE);
+
+  if(withName){
+    const sprite = makeNameSprite();
+    sprite.position.y = 10.6;
+    g.add(sprite);
+    g.userData.nameSprite = sprite;
+  }
+
   return g;
+}
+
+function makeNameSprite(){
+  const canvas = document.createElement('canvas');
+  canvas.width = 160; canvas.height = 40;
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({map:texture, depthTest:false, transparent:true});
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(8, 2, 1);
+  sprite.userData.canvas = canvas;
+  sprite.userData.lastName = '';
+  return sprite;
+}
+
+function updateNameSprite(sprite, name, rating){
+  const text = `${name} ⭐${rating.toFixed(1)}`;
+  if(sprite.userData.lastName === text) return;
+  sprite.userData.lastName = text;
+  const canvas = sprite.userData.canvas;
+  const c = canvas.getContext('2d');
+  c.clearRect(0,0,canvas.width,canvas.height);
+  c.fillStyle = 'rgba(10,30,20,0.72)';
+  c.fillRect(2,6,canvas.width-4,canvas.height-12);
+  c.fillStyle = rating >= 7 ? '#7CFC9A' : rating >= 6 ? '#fff' : '#ffb3b3';
+  c.font = 'bold 18px sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText(text, canvas.width/2, canvas.height/2+1);
+  sprite.material.map.needsUpdate = true;
 }
 
 /* ---- textures ---- */
@@ -2107,10 +3008,15 @@ function createGoalFrame(isLeft){
     new THREE.PlaneGeometry(slope, GH*2),
     slope/NET_TILE, GH*2/NET_TILE
   );
+  // lay the panel flat first (inner), then tilt it down from the crossbar to the back bar (outer).
+  // Setting both rotations on one object applies them in the wrong order (three.js XYZ Euler)
+  // and leaves the net lying flat and skewed at mid-height.
   roof.rotation.x = -Math.PI/2;
-  roof.rotation.z = ang;
-  roof.position.set(D/2, H/2, 0);
-  group.add(roof);
+  const roofTilt = new THREE.Group();
+  roofTilt.add(roof);
+  roofTilt.rotation.z = ang;
+  roofTilt.position.set(D/2, H/2, 0);
+  group.add(roofTilt);
 
   // triangular side nets
   [-GH, GH].forEach(z=>{
@@ -2208,20 +3114,33 @@ let ballTexture = null;
 function getBallTexture(){
   if(ballTexture) return ballTexture;
   const c = document.createElement('canvas');
-  c.width = c.height = 128;
+  // 2:1 map to match the sphere's UV layout; big high-contrast patches so the roll reads
+  c.width = 256; c.height = 128;
   const x = c.getContext('2d');
   x.fillStyle = '#ffffff';
-  x.fillRect(0,0,128,128);
-  x.fillStyle = '#181818';
-  [[20,26],[74,20],[46,64],[104,60],[16,102],[86,104]].forEach(p=>{
+  x.fillRect(0,0,256,128);
+  x.fillStyle = '#111111';
+  x.fillRect(0,0,256,10);     // dark caps at the poles
+  x.fillRect(0,118,256,10);
+  const pent = (cx, cy, r)=>{
     x.beginPath();
     for(let i=0;i<5;i++){
       const a = -Math.PI/2 + i*Math.PI*2/5;
-      const px = p[0] + Math.cos(a)*13, py = p[1] + Math.sin(a)*13;
+      const px = cx + Math.cos(a)*r*1.6, py = cy + Math.sin(a)*r; // widened: the map is stretched in x
       i ? x.lineTo(px,py) : x.moveTo(px,py);
     }
     x.closePath(); x.fill();
-  });
+  };
+  for(let i=0;i<5;i++){
+    pent(i*51.2 + 12, 38, 13);
+    pent(i*51.2 + 37.6, 90, 13);
+  }
+  // seams
+  x.strokeStyle = 'rgba(0,0,0,.35)';
+  x.lineWidth = 1.5;
+  for(let i=0;i<10;i++){
+    x.beginPath(); x.moveTo(i*25.6, 10); x.lineTo(i*25.6 + 12.8, 64); x.lineTo(i*25.6, 118); x.stroke();
+  }
   ballTexture = new THREE.CanvasTexture(c);
   return ballTexture;
 }
@@ -2302,48 +3221,6 @@ function buildPitchTexture(){
   const tex = new THREE.CanvasTexture(c);
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
   return tex;
-}
-
-function createGoalFrame(isLeft){
-  const group = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.35, metalness:0.1});
-  const H = 11;
-  const postGeo = new THREE.CylinderGeometry(0.75, 0.75, H, 10);
-  const postL = new THREE.Mesh(postGeo, mat);
-  const postR = new THREE.Mesh(postGeo, mat);
-  const barGeo = new THREE.CylinderGeometry(0.75, 0.75, GOAL_HALF*2, 10);
-  const bar = new THREE.Mesh(barGeo, mat);
-  bar.rotation.z = Math.PI/2;
-
-  const xPos = isLeft ? -PW/2 : PW/2;
-  postL.position.set(xPos, H/2, -GOAL_HALF);
-  postR.position.set(xPos, H/2, GOAL_HALF);
-  bar.position.set(xPos, H, 0);
-  group.add(postL, postR, bar);
-
-  const netDepth = 9;
-  const backX = isLeft ? xPos - netDepth : xPos + netDepth;
-  const netTex = getNetTexture();
-  const netMat = new THREE.MeshBasicMaterial({map:netTex, transparent:true, side:THREE.DoubleSide, opacity:0.55, depthWrite:false});
-
-  const backNet = new THREE.Mesh(new THREE.PlaneGeometry(GOAL_HALF*2, H), netMat);
-  backNet.rotation.y = Math.PI/2;
-  backNet.position.set(backX, H/2, 0);
-  group.add(backNet);
-
-  const roofNet = new THREE.Mesh(new THREE.PlaneGeometry(netDepth, GOAL_HALF*2), netMat);
-  roofNet.rotation.x = Math.PI/2;
-  roofNet.position.set((xPos+backX)/2, H, 0);
-  group.add(roofNet);
-
-  [-GOAL_HALF, GOAL_HALF].forEach(z=>{
-    const sideNet = new THREE.Mesh(new THREE.PlaneGeometry(netDepth, H), netMat);
-    sideNet.rotation.y = Math.PI/2;
-    sideNet.position.set((xPos+backX)/2, H/2, z);
-    group.add(sideNet);
-  });
-
-  return group;
 }
 
 /* ---- stadium bowl ---- */
@@ -2467,8 +3344,8 @@ function buildStaticScene(){
 function rebuildMeshes(){
   meshMine.forEach(m=>scene.remove(m));
   meshOpp.forEach(m=>scene.remove(m));
-  meshMine = myTeam.map(()=> createPlayerMesh(0x2f6fe0, 0xffffff));
-  meshOpp = oppTeam.map(()=> createPlayerMesh(0xe23b3b, 0xe23b3b));
+  meshMine = myTeam.map(()=> createPlayerMesh(0x2f6fe0, 0xffffff, true));
+  meshOpp = oppTeam.map(()=> createPlayerMesh(0xe23b3b, 0xe23b3b, false));
   meshMine.forEach(m=>scene.add(m));
   meshOpp.forEach(m=>scene.add(m));
 
@@ -2477,12 +3354,34 @@ function rebuildMeshes(){
     keeperOppMesh = createPlayerMesh(0xf5a623, 0x2b2b2b);
     scene.add(keeperMineMesh, keeperOppMesh);
   }
+  if(!refereeMesh){
+    refereeMesh = createPlayerMesh(0x1a1a1a, 0x1a1a1a);
+    scene.add(refereeMesh);
+  }
+  referee = {x:PW/2, y:PH/2, vx:0, vy:0, facing:{x:1,y:0}, animPhase:0};
   if(!ballMesh){
     ballMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(2.6, 20, 20),
-      new THREE.MeshStandardMaterial({map:getBallTexture(), roughness:0.55})
+      new THREE.SphereGeometry(BALL_RADIUS, 24, 18),
+      new THREE.MeshStandardMaterial({map:getBallTexture(), roughness:0.45, emissive:0x222222})
     );
     scene.add(ballMesh);
+
+    // soft shadow on the grass: shows where the ball is and how high it flies
+    ballShadow = new THREE.Mesh(
+      new THREE.CircleGeometry(BALL_RADIUS*1.1, 20),
+      new THREE.MeshBasicMaterial({map:getSoftDotTexture(), color:0x000000, transparent:true, opacity:0.55, depthWrite:false})
+    );
+    ballShadow.rotation.x = -Math.PI/2;
+    scene.add(ballShadow);
+
+    // motion trail: fading dots at the ball's recent positions
+    const trailTex = getSoftDotTexture();
+    for(let i=0;i<TRAIL_LEN;i++){
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({map:trailTex, color:0xfff3b0, transparent:true, opacity:0, depthWrite:false}));
+      s.visible = false;
+      scene.add(s);
+      ballTrail.push(s);
+    }
   }
   if(!ringMine){
     ringMine = new THREE.Mesh(new THREE.RingGeometry(6.4,8.2,28), new THREE.MeshBasicMaterial({color:0xffe066, side:THREE.DoubleSide, transparent:true, opacity:0.9}));
@@ -2514,6 +3413,10 @@ function updateEntityMesh(mesh, e){
     ud.legR.rotation.x = -swing;
     ud.armL.rotation.x = -swing*0.7;
     ud.armR.rotation.x = swing*0.7;
+    if(ud.nameSprite && e.playerIdx != null){
+      const p = PLAYERS[e.playerIdx];
+      if(p) updateNameSprite(ud.nameSprite, p.name, e.rating||6);
+    }
   }
 }
 
@@ -2521,16 +3424,25 @@ function isFullscreenLandscape(){
   return window.matchMedia('(orientation: landscape)').matches && window.innerHeight <= 600;
 }
 
+/* Broadcast ("TV") camera, FIFA style: high on the near touchline, long lens,
+   low angle, pans along the pitch with the play. */
+const CAM_FOV = 32;                        // narrow lens = flat, TV-like perspective
+const CAM_ELEVATION = 30 * Math.PI/180;    // low angle: players read as people, far stand fills the background
+const CAM_VIEW_W = 250;                    // world units visible across the screen (pitch is 640 long)
+const CAM_Z_FOLLOW = 0.7;                  // how much the camera follows the ball across the pitch's width
+const PLAYER_SCALE = 1.3;                  // visual only: hit boxes and physics are unchanged
+
 function updateCameraPosition(){
-  const camX = camera.x - PW/2;
-  const camZ = camera.y - PH/2;
-  const close = isFullscreenLandscape();
-  // broadcast camera: parked on the near touchline, pans with play
-  const camHeight = close ? 54 : 60;
-  const camDist = close ? 156 : 172;
-  const panX = Math.max(-115, Math.min(115, camX * 0.55));
-  camera3d.position.set(panX, camHeight, camDist);
-  camera3d.lookAt(panX + (camX - panX) * 0.35, 0, -PH * 0.12);
+  // distance that shows CAM_VIEW_W units across the screen at the look-at point
+  const halfTan = Math.tan(CAM_FOV * Math.PI/360);
+  const d = camViewW / (2 * halfTan * camera3d.aspect);
+  // pan freely but stop once the goal and its net reach the edge of the frame
+  const maxX = Math.max(0, PW/2 + 40 - camViewW/2);
+  const maxZ = PH/2 - 55;
+  const tx = Math.max(-maxX, Math.min(maxX, camera.x - PW/2));
+  const tz = Math.max(-maxZ, Math.min(maxZ, (camera.y - PH/2) * CAM_Z_FOLLOW));
+  camera3d.position.set(tx, Math.sin(CAM_ELEVATION)*d, tz + Math.cos(CAM_ELEVATION)*d);
+  camera3d.lookAt(tx, 4, tz); // aim a little above the grass, at the players' bodies
 }
 
 function applyGlitch3D(){
@@ -2552,15 +3464,244 @@ function syncRendererSize(){
   camera3d.updateProjectionMatrix();
 }
 
+const BALL_RADIUS = 1.9; // ~1/3 of a player's height: a bit larger than real so it stays readable
+const _spinAxis = new THREE.Vector3();
+const TRAIL_LEN = 14;
+let ballShadow = null, ballTrail = [], trailHistory = [];
+
+let softDotTexture = null;
+function getSoftDotTexture(){
+  if(softDotTexture) return softDotTexture;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(32,32,0,32,32,32);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.5, 'rgba(255,255,255,.6)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0,0,64,64);
+  softDotTexture = new THREE.CanvasTexture(c);
+  return softDotTexture;
+}
+
+// trail shows only on a moving loose ball (shots, passes, clearances), fades when it slows
+function updateBallTrail(){
+  const speed = Math.hypot(ball.vx||0, ball.vy||0);
+  const moving = !carrier && (speed > 1.6 || ball.airborne);
+  const p = ballMesh.position;
+  const last = trailHistory[0];
+  if(last && Math.hypot(p.x-last.x, p.z-last.z) > 40) trailHistory.length = 0; // teleport (kickoff, corner)
+  if(moving) trailHistory.unshift({x:p.x, y:p.y, z:p.z});
+  else trailHistory.pop(); // drain from the tail so the trail shrinks smoothly
+  if(trailHistory.length > TRAIL_LEN) trailHistory.length = TRAIL_LEN;
+  const strength = Math.min(1, speed/5 + (ball.airborne ? 0.4 : 0));
+  for(let i=0;i<TRAIL_LEN;i++){
+    const s = ballTrail[i];
+    const h = trailHistory[i+1]; // skip the current spot, the ball itself is there
+    if(!h){ s.visible = false; continue; }
+    const t = 1 - i/TRAIL_LEN;
+    s.visible = true;
+    s.position.set(h.x, h.y, h.z);
+    const size = BALL_RADIUS*2*(0.35 + 0.65*t);
+    s.scale.set(size, size, 1);
+    s.material.opacity = 0.55 * t * Math.max(0.35, strength);
+  }
+}
+
+// roll the ball around the axis perpendicular to its travel direction
+function spinBall(dx, dz){
+  const dist = Math.hypot(dx, dz);
+  if(dist < 0.001 || dist > 40) return; // not moving, or teleported (kickoff / corner spot)
+  _spinAxis.set(dz, 0, -dx).normalize();
+  // capped per frame: a true-to-speed roll on a hard shot strobes (wagon-wheel) and looks frozen
+  ballMesh.rotateOnWorldAxis(_spinAxis, Math.min(dist / BALL_RADIUS, 0.38));
+}
+
+// referee runs like a player: real velocity (drives the leg animation), faces where he goes,
+// keeps a few metres off the play and turns to watch the ball once he's in position
+function moveReferee(){
+  const side = ball.x < PW/2 ? 1 : -1;            // stand on the goal side of the ball
+  const tx = Math.max(20, Math.min(PW-20, ball.x - side*28));
+  const ty = Math.max(20, Math.min(PH-20, ball.y + (ball.y < PH/2 ? 30 : -30)));
+  const dx = tx - referee.x, dy = ty - referee.y;
+  const dist = Math.hypot(dx, dy);
+  if(dist > 6){
+    const speed = Math.min((speedAI || 2) * 0.95, 0.6 + dist*0.03); // jog when close, sprint when far
+    referee.vx = dx/dist*speed;
+    referee.vy = dy/dist*speed;
+    referee.facing = {x:dx/dist, y:dy/dist};
+  } else {
+    referee.vx = 0; referee.vy = 0;
+    const bx = ball.x - referee.x, by = ball.y - referee.y, bd = Math.hypot(bx, by) || 1;
+    referee.facing = {x:bx/bd, y:by/bd};
+  }
+  referee.x += referee.vx * GAME_SPEED;
+  referee.y += referee.vy * GAME_SPEED;
+}
+
+/* ---- context button: pass with the ball, tackle without it ---- */
+let actionMode = '';
+function updateActionButton(){
+  if(state.spectate || !controlled) return;
+  const hasBall = carrier === controlled;
+  const mode = hasBall ? 'pass' : 'tackle';
+  if(mode !== actionMode){
+    actionMode = mode;
+    $('actionIcon').textContent = hasBall ? '🎯' : '🦵';
+    $('actionLabel').textContent = hasBall ? 'מסירה' : 'תיקול';
+    $('actionBtn').setAttribute('aria-label', hasBall ? 'מסירה' : 'תיקול');
+    $('actionBtn').classList.toggle('pass', hasBall);
+  }
+  const canTackle = carrier && carrier.team !== 'mine' && !ball.airborne &&
+    Math.hypot(controlled.x-ball.x, controlled.y-ball.y) <= CAPTURE_R + 16;
+  $('actionBtn').classList.toggle('dim', !hasBall && !canTackle);
+  $('liftBtn').classList.toggle('dim', !hasBall);
+}
+
+/* ---- "you" labels above the controlled players ---- */
+let youLabel = null, p2Label = null;
+function makeTagSprite(text, bg, fg){
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 48;
+  const g = c.getContext('2d');
+  g.direction = 'rtl';
+  g.fillStyle = bg;
+  g.beginPath();
+  g.roundRect ? g.roundRect(14, 2, 100, 30, 10) : g.rect(14, 2, 100, 30);
+  g.fill();
+  g.beginPath(); g.moveTo(54, 32); g.lineTo(74, 32); g.lineTo(64, 44); g.closePath(); g.fill(); // pointer
+  g.fillStyle = fg;
+  g.font = 'bold 20px sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(text, 64, 18);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c), depthTest:false, transparent:true}));
+  sprite.scale.set(10, 3.75, 1);
+  sprite.renderOrder = 10;
+  return sprite;
+}
+function updateYouLabels(){
+  if(!youLabel){
+    youLabel = makeTagSprite('אתה', '#ffd23c', '#1a1a1a');
+    p2Label = makeTagSprite('שחקן 2', '#e23b3b', '#ffffff');
+    scene.add(youLabel, p2Label);
+  }
+  const bob = Math.sin(performance.now()/220) * 0.6;
+  youLabel.visible = !state.spectate && !!controlled;
+  if(youLabel.visible) youLabel.position.set(controlled.x-PW/2, 19.5 + bob, controlled.y-PH/2);
+  p2Label.visible = !!state.vsFriend && !!controlled2;
+  if(p2Label.visible) p2Label.position.set(controlled2.x-PW/2, 16 + bob, controlled2.y-PH/2);
+}
+
+/* ---- corner brackets on the player fighting for the ball ---- */
+let focusMarker = null;
+function updateFocusMarker(){
+  if(!focusMarker){
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    g.strokeStyle = '#ffffff'; g.lineWidth = 9; g.lineCap = 'round';
+    const a = 10, b = 118, L = 30;
+    [[a,a,1,1],[b,a,-1,1],[a,b,1,-1],[b,b,-1,-1]].forEach(([x,y,dx,dy])=>{
+      g.beginPath(); g.moveTo(x+dx*L, y); g.lineTo(x, y); g.lineTo(x, y+dy*L); g.stroke();
+    });
+    focusMarker = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c), transparent:true, depthWrite:false, opacity:0.9})
+    );
+    focusMarker.rotation.x = -Math.PI/2;
+    scene.add(focusMarker);
+  }
+  let target = carrier;
+  if(!target){ // loose ball: whoever is about to reach it
+    let best = 45;
+    myTeam.concat(oppTeam, [keeperMine, keeperOpp]).forEach(e=>{
+      const d = Math.hypot(e.x-ball.x, e.y-ball.y);
+      if(d < best){ best = d; target = e; }
+    });
+  }
+  focusMarker.visible = !!target;
+  if(!target) return;
+  const pulse = 1 + Math.sin(performance.now()/160) * 0.08;
+  const size = 17 * pulse;
+  focusMarker.scale.set(size, size, 1);
+  focusMarker.position.set(target.x-PW/2, 0.3, target.y-PH/2);
+  const mine = target.team === 'mine';
+  focusMarker.material.color.setHex(mine ? 0xbfe0ff : 0xffc4c4);
+}
+
+/* ---- zoom: automatic by situation, times the player's own pinch zoom ---- */
+const VIEW_MIN = 160, VIEW_MAX = 600;
+let camViewW = CAM_VIEW_W;
+let userZoom = 1;
+try { userZoom = parseFloat(localStorage.getItem('cupZoom')) || 1; } catch(e){}
+
+function updateAutoZoom(){
+  let target = CAM_VIEW_W;
+  const speed = Math.hypot(ball.vx||0, ball.vy||0);
+  if(!carrier && (speed > 3 || ball.airborne)){
+    target = CAM_VIEW_W * 1.35;              // long ball: pull back to show where it lands
+  } else if(carrier){
+    const rivals = myTeam.concat(oppTeam, [keeperMine, keeperOpp]).filter(e=>e.team !== carrier.team);
+    const close = rivals.some(e=>Math.hypot(e.x-carrier.x, e.y-carrier.y) < 32);
+    if(close) target = CAM_VIEW_W * 0.86;    // duel for the ball: push in
+  }
+  target = Math.max(VIEW_MIN, Math.min(VIEW_MAX, target * userZoom));
+  camViewW += (target - camViewW) * 0.03;
+}
+
+function setupPinchZoom(){
+  const pts = new Map();
+  let startDist = 0, startZoom = 1;
+  const save = ()=>{ try { localStorage.setItem('cupZoom', userZoom.toFixed(3)); } catch(e){} };
+  const clampZoom = z => Math.max(0.6, Math.min(2.2, z));
+  canvas.addEventListener('pointerdown', e=>{
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pts.size === 2){
+      const [a,b] = [...pts.values()];
+      startDist = Math.hypot(a.x-b.x, a.y-b.y) || 1;
+      startZoom = userZoom;
+    }
+  });
+  canvas.addEventListener('pointermove', e=>{
+    if(!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if(pts.size === 2){
+      const [a,b] = [...pts.values()];
+      const d = Math.hypot(a.x-b.x, a.y-b.y) || 1;
+      userZoom = clampZoom(startZoom * startDist / d); // fingers apart = closer
+      camViewW = Math.max(VIEW_MIN, Math.min(VIEW_MAX, camViewW * 0.6 + CAM_VIEW_W * userZoom * 0.4));
+    }
+  });
+  const end = e=>{ if(pts.delete(e.pointerId) && pts.size < 2) save(); };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('pointerleave', end);
+  // desktop: mouse wheel / trackpad pinch
+  canvas.addEventListener('wheel', e=>{
+    e.preventDefault();
+    userZoom = clampZoom(userZoom * Math.exp(e.deltaY * 0.0015));
+    save();
+  }, {passive:false});
+}
+
 function render(){
   syncRendererSize();
   updateCamera();
+  updateAutoZoom();
   updateCameraPosition();
 
   myTeam.forEach((e,i)=> meshMine[i] && updateEntityMesh(meshMine[i], e));
   oppTeam.forEach((e,i)=> meshOpp[i] && updateEntityMesh(meshOpp[i], e));
   updateEntityMesh(keeperMineMesh, keeperMine);
   updateEntityMesh(keeperOppMesh, keeperOpp);
+
+  if(referee && !referee.frozen) moveReferee();
+  else if(referee){ referee.vx = 0; referee.vy = 0; }
+  if(referee) updateEntityMesh(refereeMesh, referee);
+  updateYouLabels();
+  updateFocusMarker();
+  updateActionButton();
 
   ringMine.visible = !state.spectate;
   if(!state.spectate){
@@ -2573,12 +3714,21 @@ function render(){
     ringOpp.visible = false;
   }
 
-  let ballHeight = 1.5;
+  let lift = 0;
   if(ball.airborne && ball._airStart){
     const progress = Math.min(1, (performance.now()-ball._airStart)/550);
-    ballHeight = 1.5 + Math.sin(progress*Math.PI)*20;
+    lift = Math.sin(progress*Math.PI)*20;
   }
-  ballMesh.position.set(ball.x-PW/2, ballHeight, ball.y-PH/2);
+  const prevBX = ballMesh.position.x, prevBZ = ballMesh.position.z;
+  ballMesh.position.set(ball.x-PW/2, BALL_RADIUS + lift, ball.y-PH/2);
+  spinBall(ballMesh.position.x - prevBX, ballMesh.position.z - prevBZ);
+
+  // shadow stays on the grass, shrinks and fades as the ball climbs
+  const lift01 = Math.min(1, lift/20);
+  ballShadow.position.set(ballMesh.position.x, 0.15, ballMesh.position.z);
+  ballShadow.scale.setScalar(1 - lift01*0.35);
+  ballShadow.material.opacity = 0.55 - lift01*0.3;
+  updateBallTrail();
 
   if(state.funMode === 'glitch'){
     if(glitchBurstFrames > 0){
@@ -2624,7 +3774,7 @@ function resetGame(){
   running = false;
   clearInterval(timerInterval);
   isPracticeMatch = false;
-  state = {teamName:"", selected:[], round:0, matchLength:'short', squadSize:5, funMode:'normal', upgrade:0, vsFriend:false, spectate:false, gameInLeague:0, premiumUnlocked:false, diamonds:0, missionsDone:{}, winStreak:0};
+  state = {teamName:"", selected:[], round:0, squadSize:5, funMode:'normal', upgrade:0, vsFriend:false, spectate:false, gameInLeague:0, premiumUnlocked:false, diamonds:loadSavedDiamonds(), missionsDone:{}, winStreak:0, collection:[], pendingSwaps:[], injuries:{}};
   updateDiamondDisplay();
   $('teamName').value = "";
   document.querySelectorAll('#squadToggle .length-btn').forEach(b=>b.classList.remove('active'));
@@ -2643,6 +3793,7 @@ function resetGame(){
 }
 
 setRail(0);
+grantMonthlyPrize();
 </script>
 </body>
 </html>
